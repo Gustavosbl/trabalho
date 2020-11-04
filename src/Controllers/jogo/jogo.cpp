@@ -38,9 +38,10 @@ void Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::sha
         std::shared_ptr<Textura> textura = personagem->getTextura();
         int tx = textura->getTarget().x;
         int ty = textura->getTarget().y;
-        if (mapa[(ty+personagem->getHeight()/2)+(personagem->getHeight()*y/2)][(tx+personagem->getWidth()/2)+(personagem->getWidth()*x/2)] == 3 || mapa[(ty+personagem->getHeight()/2)+(personagem->getHeight()*y/2)][(tx+personagem->getWidth()/2)+(personagem->getWidth()*x/2)] == 4) {
+        if ((mapa[ty+y][tx+x] == 3 || mapa[ty+y][tx+x] == 4) && (mapa[ty+personagem->getHeight()-1+y][tx+x] == 3 || mapa[ty+personagem->getHeight()-1+y][tx+x] == 4) && (mapa[ty+y][tx+personagem->getWidth()-1+x] == 3 || mapa[ty+y][tx+personagem->getWidth()-1+x] == 4) && (mapa[ty+personagem->getHeight()-1+y][tx+personagem->getWidth()-1+x] == 3 || mapa[ty+personagem->getHeight()-1+y][tx+personagem->getWidth()-1+x] == 4)) {
             textura->setTarget(tx+x, ty+y);
-            personagem->setTextura(textura);
+            personagem->setTextura(textura);    
+            
         }
     }
 }
