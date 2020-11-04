@@ -43,7 +43,7 @@ int Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::shar
             personagem->setTextura(textura);    
             return 0;
         }
-        else {
+        else if ((mapa[ty+oldY][tx+oldX] == 3 || mapa[ty+oldY][tx+oldX] == 4) && (mapa[ty+personagem->getHeight()-1+oldY][tx+oldX] == 3 || mapa[ty+personagem->getHeight()-1+oldY][tx+oldX] == 4) && (mapa[ty+oldY][tx+personagem->getWidth()-1+oldX] == 3 || mapa[ty+oldY][tx+personagem->getWidth()-1+oldX] == 4) && (mapa[ty+personagem->getHeight()-1+oldY][tx+personagem->getWidth()-1+oldX] == 3 || mapa[ty+personagem->getHeight()-1+oldY][tx+personagem->getWidth()-1+oldX] == 4)) {
             textura->setTarget(tx+oldX, ty+oldY);
             personagem->setTextura(textura); 
             return 1;
@@ -83,19 +83,19 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         if ((teclado->getState())[SDL_SCANCODE_UP]) {
             newX = 0; 
             newY = -1;
-        };
-        if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
             newX = 0; 
             newY = 1;
-        };
-        if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
             newX = 1; 
             newY = 0;
-        };
-        if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
             newX = -1; 
             newY = 0;
-        };
+        }
         int i = setCharacterPosition(personagem, cenarioJogo, newX, newY, x, y);
         if (i == 0) {
             x = newX;
