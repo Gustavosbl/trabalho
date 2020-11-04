@@ -21,7 +21,7 @@ void View::renderWindow(std::shared_ptr<Textura> textura1, std::shared_ptr<Textu
     //render capivara
 
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, textura2->getTextura(), nullptr, nullptr);
+    SDL_RenderCopyEx(renderer, textura2->getTextura(), nullptr, nullptr, 180, nullptr, SDL_FLIP_NONE);
     SDL_RenderCopy(renderer, textura1->getTextura(), nullptr, textura1->getTargetAdress());
     SDL_RenderPresent(renderer);
 

@@ -50,21 +50,18 @@ int main() {
     std::shared_ptr<Personagem> personagem (new Personagem(pacman, false, false, 30, 30));
     std::shared_ptr<CenarioJogo> cenarioJogo (new CenarioJogo(mapa));
 
-    // char const *img1 = "../Assets/capi.png";
-    // char const *img2 = "../Assets/park.jpeg";
+    char const *img1 = "./assets/pacman.jpg";
+    char const *img2 = "./assets/mapinha.jpg";
 
-    // std::shared_ptr<Textura> textura1 (new Textura(view->getRenderer(), img1, posX, posY)); // textura 1 (movel)
-    // std::shared_ptr<Textura> textura2 (new Textura(view->getRenderer(), img2, posX, posY)); // textura 2 (fundo)
+    std::shared_ptr<Textura> textura1 (new Textura(view->getRenderer(), img1, 0, 0)); // textura 1 (movel)
+    std::shared_ptr<Textura> textura2 (new Textura(view->getRenderer(), img2, 0, 0)); // textura 2 (fundo)
     
-    // std::shared_ptr<Teclado> teclado (new Teclado()); // teclado
+    std::shared_ptr<Teclado> teclado (new Teclado()); // teclado
 
-
-    // sistema->setTextura(1, textura1);
-    // sistema->setTextura(2, textura2);
-
-    // sistema->setTeclado(teclado);
-
-    // sistema->calcularSistema2(speed, g); // (posicao inicial, posicao inicial, velocidade, intervalo de tempo, constante gravitacional)
+    personagem->setTextura(textura1);
+    cenarioJogo->setTextura(textura2);
+    
+    jogo->iniciarJogo(cenarioJogo, personagem, view, teclado);
 
     return 0;
 }

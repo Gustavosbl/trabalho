@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "imageprocessing.h"
+#include "../../../Include/Controllers/imageprocessing/imageprocessing.hpp"
 
 #include <FreeImage.h>
 

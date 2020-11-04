@@ -16,25 +16,29 @@ int Jogo::setSDLInit() {
 }
 
 void Jogo::setInitialPosition(std::shared_ptr<Personagem> personagem, std::shared_ptr<CenarioJogo> cenarioJogo) {
-    int ** mapa = cenarioJogo->getMap();
-    for (unsigned long int i = 0; i < sizeof(mapa); i++) {
-        for (unsigned long int j = 0; j < sizeof(mapa[i]); j++) {
-            if (personagem->getGhost() == false && mapa[i][j] == 4) {
+    int b = 0;
+    for (unsigned long int i = 0; i < cenarioJogo->getHeight(); i++) {
+        for (unsigned long int j = 0; j < cenarioJogo->getWidth(); j++) {
+            if (personagem->getGhost() == false && cenarioJogo->getMap()[i][j] == 4) {
+                printf("i = %d; j = %d; num = %d\n", i, j, cenarioJogo->getMap()[i][j]);
                 std::shared_ptr<Textura> textura = personagem->getTextura();
                 textura->setTarget(j, i);
                 personagem->setTextura(textura);
+                b = 1;
+                break;
             }
         }
+        if (b == 1) break;
     }
 }
 
 void Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::shared_ptr<CenarioJogo> cenarioJogo, int x, int y){
     int **mapa = cenarioJogo->getMap();
-    if (personagem->getGhost() == false) {
+    if (personagem->getGhost() == false && (x != 0 || y != 0)) {
         std::shared_ptr<Textura> textura = personagem->getTextura();
         int tx = textura->getTarget().x;
         int ty = textura->getTarget().y;
-        if (mapa[ty+y][tx+x] == 3 || mapa[ty+y][tx+x] == 4) {
+        if (mapa[(ty+personagem->getHeight()/2)+(personagem->getHeight()*y/2)][(tx+personagem->getWidth()/2)+(personagem->getWidth()*x/2)] == 3 || mapa[(ty+personagem->getHeight()/2)+(personagem->getHeight()*y/2)][(tx+personagem->getWidth()/2)+(personagem->getWidth()*x/2)] == 4) {
             textura->setTarget(tx+x, ty+y);
             personagem->setTextura(textura);
         }
@@ -42,7 +46,9 @@ void Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::sha
 }
 
 
-void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Personagem> personagem, std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, SDL_Event *event) {
+void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Personagem> personagem, std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
+
+    SDL_Event event;
 
     setInitialPosition(personagem, cenarioJogo);
     
@@ -70,13 +76,13 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             y = 0;
         };
         setCharacterPosition(personagem, cenarioJogo, x, y);
-        while (SDL_PollEvent(event)) {
-            if (event->type == SDL_QUIT) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
                 rodando = false;
             }
         }
 
-        // view->renderWindow(personagem->getTextura(), cenarioJogo->getTextura());
+        view->renderWindow(personagem->getTextura(), cenarioJogo->getTextura());
 
 
         SDL_Delay(10);

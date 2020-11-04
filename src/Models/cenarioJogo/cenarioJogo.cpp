@@ -29,17 +29,19 @@ CenarioJogo::CenarioJogo(int **mapa1)
     // int **mapa = mapa1;
     imagem img;
     int factor = 30;
-    int width = factor * 25;
-    int height = factor * 21;
-    img.width = width;
-    img.height = height;
+    int w = factor * 25;
+    int h = factor * 21;
+    width = w;
+    height = h;
+    img.width = w;
+    img.height = h;
     img.r = (float *)malloc(sizeof(float) * img.width * img.height);
     img.g = (float *)malloc(sizeof(float) * img.width * img.height);
     img.b = (float *)malloc(sizeof(float) * img.width * img.height);
-    int **mapa2 = (int **)malloc(height * sizeof(int *));
-    for (int i = 0; i < height; i++)
+    map = (int **)malloc(h * sizeof(int *));
+    for (int i = 0; i < h; i++)
     {
-        mapa2[i] = (int *)malloc(width * sizeof(int));
+        map[i] = (int *)malloc(w * sizeof(int));
     }
 
     for (int i = 0; i < 21; i++)
@@ -50,32 +52,32 @@ CenarioJogo::CenarioJogo(int **mapa1)
             {
                 for (int l = 0; l < factor; l++)
                 {
-                    mapa2[factor * i + k][factor * j + l] = mapa[i][j];
+                    map[factor * i + k][factor * j + l] = mapa[i][j];
                 }
             }
         }
     }
 
-    map = mapa2;
 
-    for (int i = 0; i < width; i++)
+
+    for (int i = 0; i < w; i++)
     {
-        for (int j = 0; j < height; j++)
+        for (int j = 0; j < h; j++)
         {
             int idx = i + (j * img.width);
-            if (mapa2[j][i] == 0 || mapa2[j][i] == 3 || mapa2[j][i] == 4 || mapa2[j][i] == 5)
+            if (map[j][i] == 0 || map[j][i] == 3 || map[j][i] == 4 || map[j][i] == 5)
             {
                 img.r[idx] = 0;
                 img.g[idx] = 0;
                 img.b[idx] = 0;
             }
-            else if (mapa2[j][i] == 1)
+            else if (map[j][i] == 1)
             {
                 img.r[idx] = 0;
                 img.g[idx] = 0;
                 img.b[idx] = 255;
             }
-            else if (mapa2[j][i] == 2)
+            else if (map[j][i] == 2)
             {
                 img.r[idx] = 200;
                 img.g[idx] = 200;
@@ -84,7 +86,7 @@ CenarioJogo::CenarioJogo(int **mapa1)
         }
     }
 
-    salvar_imagem("mapinha.jpg", &img);
+    salvar_imagem("assets/mapinha.jpg", &img);
     liberar_imagem(&img);
 };
 
@@ -105,4 +107,17 @@ void CenarioJogo::setTextura(std::shared_ptr<Textura> textura1)
 std::shared_ptr<Textura> CenarioJogo::getTextura()
 {
     return textura;
+}
+
+void CenarioJogo::setWidth(int w){
+    width = w;
+}
+int CenarioJogo::getWidth(){
+    return width;
+}
+void CenarioJogo::setHeight(int h){
+    height = h;
+}
+int CenarioJogo::getHeight(){
+    return height;
 }
