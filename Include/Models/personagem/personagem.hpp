@@ -7,9 +7,10 @@ class Personagem {
     private:
         std::shared_ptr<Textura> textura;
         bool power, ghost;
-        int height, width;
+        int height, width, life;
+        unsigned long int score;
     public:
-        Personagem(int** pac, bool power1, bool ghost1, int width1, int height1);
+        Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path);
         ~Personagem();
         void setTextura(std::shared_ptr<Textura> textura1);
         std::shared_ptr<Textura> getTextura();
@@ -20,4 +21,8 @@ class Personagem {
         int getHeight();
         void setWidth(int width1);
         int getWidth();
+        void setLife(int life1);
+        int getLife();
+        void setScore(unsigned long int score1);
+        unsigned long int getScore();
 };

@@ -3,6 +3,7 @@
 #include <SDL2/SDL_image.h>
 #include "../Models/textura/textura.hpp"
 #include <memory>
+#include <vector>
 
 class View{
     private:
@@ -14,7 +15,7 @@ class View{
         View(int x, int y);
         ~View();
         void render(float t, int x, int y);
-        void renderWindow(std::shared_ptr<Textura> textura1, std::shared_ptr<Textura> textura2);
+        void renderWindow(std::shared_ptr<Textura> textura1, std::vector<std::shared_ptr<Textura>> texturas, std::shared_ptr<Textura> textura2);
 
         int setWindow();
         int setRenderer();

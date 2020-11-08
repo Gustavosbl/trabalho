@@ -1,14 +1,14 @@
 #include "../../../Include/Models/personagem/personagem.hpp"
 
-Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int height1)
+Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path)
 {
     power = power1;
     ghost = ghost1;
     height = height1;
     width = width1;
 
-    int mapa[1][1] = {{6}};
-    // int **mapa = pac;
+    // int mapa[1][1] = {{6}};
+    int **mapa = pac;
     imagem img;
     int factor = 30;
     int width = factor * 1;
@@ -38,38 +38,45 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
         }
     }
 
+    int r = rand() % 256;
+    int g = rand() % 256;
+    int b = rand() % 256;
+
     for (int i = 0; i < width; i++)
     {
         for (int j = 0; j < height; j++)
         {
             int idx = i + (j * img.width);
-            if (mapa2[j][i] == 0 || mapa2[j][i] == 3 || mapa2[j][i] == 4 || mapa2[j][i] == 5)
-            {
-                img.r[idx] = 0;
-                img.g[idx] = 0;
-                img.b[idx] = 0;
-            }
-            else if (mapa2[j][i] == 1)
-            {
-                img.r[idx] = 0;
-                img.g[idx] = 0;
-                img.b[idx] = 255;
-            }
-            else if (mapa2[j][i] == 2)
-            {
-                img.r[idx] = 200;
-                img.g[idx] = 200;
-                img.b[idx] = 200;
-            }
-            else {
-                img.r[idx] = 0;
-                img.g[idx] = 255;
-                img.b[idx] = 0;
-            }
+            img.r[idx] = r;
+            img.g[idx] = g;
+            img.b[idx] = b;
+            // if (mapa2[j][i] == 0 || mapa2[j][i] == 3 || mapa2[j][i] == 4 || mapa2[j][i] == 5)
+            // {
+            //     img.r[idx] = 0;
+            //     img.g[idx] = 0;
+            //     img.b[idx] = 0;
+            // }
+            // else if (mapa2[j][i] == 1)
+            // {
+            //     img.r[idx] = 0;
+            //     img.g[idx] = 0;
+            //     img.b[idx] = 255;
+            // }
+            // else if (mapa2[j][i] == 2)
+            // {
+            //     img.r[idx] = 200;
+            //     img.g[idx] = 200;
+            //     img.b[idx] = 200;
+            // }
+            // else {
+            //     img.r[idx] = 0;
+            //     img.g[idx] = 255;
+            //     img.b[idx] = 0;
+            // }
         }
     }
 
-    salvar_imagem("assets/pacman.jpg", &img);
+    salvar_imagem(path, &img);
     liberar_imagem(&img);
 };
 
@@ -110,4 +117,16 @@ void Personagem::setWidth(int width1)
 int Personagem::getWidth()
 {
     return width;
+};
+void Personagem::setLife(int life1){
+    life = life1;
+};
+int Personagem::getLife(){
+    return life;
+};
+void Personagem::setScore(unsigned long int score1){
+    score = score1;
+};
+unsigned long int Personagem::getScore(){
+    return score;
 };

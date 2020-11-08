@@ -12,7 +12,7 @@ void salvar_imagem(char *nome_do_arquivo);
 void liberar_imagem(imagem *i);
  */
 
-imagem abrir_imagem(char *nome_do_arquivo) {
+imagem abrir_imagem(char const*nome_do_arquivo) {
   FIBITMAP *bitmapIn;
   int x, y;
   RGBQUAD color;
@@ -55,7 +55,7 @@ void liberar_imagem(imagem *I) {
   free(I->b);
 }
 
-void salvar_imagem(char *nome_do_arquivo, imagem *I) {
+void salvar_imagem(char const*nome_do_arquivo, imagem *I) {
   FIBITMAP *bitmapOut;
   RGBQUAD color;
 

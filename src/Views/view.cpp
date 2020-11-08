@@ -17,18 +17,21 @@ void View::render(float t, int x, int y){
     std::cout << "Tempo: " << t << "; Coordenadas: (" << x << ", " << y << ");" << std::endl;
 };
 
-void View::renderWindow(std::shared_ptr<Textura> textura1, std::shared_ptr<Textura> textura2){
+void View::renderWindow(std::shared_ptr<Textura> textura1, std::vector<std::shared_ptr<Textura>> texturas, std::shared_ptr<Textura> textura2){
     //render capivara
 
     SDL_RenderClear(renderer);
     SDL_RenderCopyEx(renderer, textura2->getTextura(), nullptr, nullptr, 180, nullptr, SDL_FLIP_NONE);
     SDL_RenderCopy(renderer, textura1->getTextura(), nullptr, textura1->getTargetAdress());
+    for (int i = 0; i < texturas.size(); i++) {
+        SDL_RenderCopy(renderer, texturas[i]->getTextura(), nullptr, texturas[i]->getTargetAdress());
+    }
     SDL_RenderPresent(renderer);
 
 };
 
 int View::setWindow(){
-    window = SDL_CreateWindow("Demonstracao do SDL2",
+    window = SDL_CreateWindow("Pac-Men",
       SDL_WINDOWPOS_UNDEFINED,
       SDL_WINDOWPOS_UNDEFINED,
       screenWidth,

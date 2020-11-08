@@ -8,8 +8,8 @@ typedef struct {
   float *r, *g, *b;
 } imagem;
 
-imagem abrir_imagem(char *nome_do_arquivo);
-void salvar_imagem(char *nome_do_arquivo, imagem *I);
+imagem abrir_imagem(char const*nome_do_arquivo);
+void salvar_imagem(char const*nome_do_arquivo, imagem *I);
 void liberar_imagem(imagem *i);
 
 #endif
