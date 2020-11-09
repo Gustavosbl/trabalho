@@ -15,8 +15,10 @@ class View{
         View(int x, int y);
         ~View();
         void render(float t, int x, int y);
-        void renderWindow(std::shared_ptr<Textura> textura1, std::vector<std::shared_ptr<Textura>> texturas, std::shared_ptr<Textura> textura2);
-
+        void renderClear();
+        void renderBackground(std::shared_ptr<Textura> textura);
+        void renderCharacter(std::shared_ptr<Textura> textura);
+        void renderPresent();
         int setWindow();
         int setRenderer();
         SDL_Window* getWindow();

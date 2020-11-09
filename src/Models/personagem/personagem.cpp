@@ -6,6 +6,8 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
     ghost = ghost1;
     height = height1;
     width = width1;
+    life = 2;
+    score = 0;
 
     // int mapa[1][1] = {{6}};
     int **mapa = pac;
@@ -50,29 +52,6 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
             img.r[idx] = r;
             img.g[idx] = g;
             img.b[idx] = b;
-            // if (mapa2[j][i] == 0 || mapa2[j][i] == 3 || mapa2[j][i] == 4 || mapa2[j][i] == 5)
-            // {
-            //     img.r[idx] = 0;
-            //     img.g[idx] = 0;
-            //     img.b[idx] = 0;
-            // }
-            // else if (mapa2[j][i] == 1)
-            // {
-            //     img.r[idx] = 0;
-            //     img.g[idx] = 0;
-            //     img.b[idx] = 255;
-            // }
-            // else if (mapa2[j][i] == 2)
-            // {
-            //     img.r[idx] = 200;
-            //     img.g[idx] = 200;
-            //     img.b[idx] = 200;
-            // }
-            // else {
-            //     img.r[idx] = 0;
-            //     img.g[idx] = 255;
-            //     img.b[idx] = 0;
-            // }
         }
     }
 

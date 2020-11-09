@@ -65,7 +65,7 @@ CenarioJogo::CenarioJogo(int **mapa1)
         for (int j = 0; j < h; j++)
         {
             int idx = i + (j * img.width);
-            if (map[j][i] == 0 || map[j][i] == 3 || map[j][i] == 4 || map[j][i] == 5)
+            if (map[j][i] == 0 || (map[j][i] >= 3 && map[j][i] <= 6))
             {
                 img.r[idx] = 0;
                 img.g[idx] = 0;
