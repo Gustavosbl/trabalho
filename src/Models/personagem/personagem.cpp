@@ -8,6 +8,7 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
     width = width1;
     life = 2;
     score = 0;
+    if (ghost1 == true) life = 0;
 
     // int mapa[1][1] = {{6}};
     int **mapa = pac;

@@ -105,25 +105,25 @@ int Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::shar
     }
 }
 
-int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Teclado> teclado, std::shared_ptr<int> x, std::shared_ptr<int> y) { 
+int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Teclado> teclado, std::shared_ptr<int> x, std::shared_ptr<int> y, std::shared_ptr<int> cont) { 
     int newX = 0;
     int newY = 0;
     
     teclado->updateState();
     if ((teclado->getState())[SDL_SCANCODE_UP]) {
         newX = 0; 
-        newY = -1;
+        newY = -2;
     }
     else if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
         newX = 0; 
-        newY = 1;
+        newY = 2;
     }
     else if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
-        newX = 1; 
+        newX = 2; 
         newY = 0;
     }
     else if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
-        newX = -1; 
+        newX = -2; 
         newY = 0;
     }
     int i = setCharacterPosition(personagem, cenarioJogo, newX, newY, (*x), (*y));
@@ -135,6 +135,23 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
     int ypse = personagem->getTextura()->getTarget().y;
     int xpid = personagem->getTextura()->getTarget().x+29;
     int ypid = personagem->getTextura()->getTarget().y+29;
+    for (int i = 0; i < bolinhas.size(); i++) {
+        int xbse = bolinhas[i]->getTextura()->getTarget().x;
+        int ybse = bolinhas[i]->getTextura()->getTarget().y;
+        int xbid = bolinhas[i]->getTextura()->getTarget().x+29;
+        int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
+        if ((xbse == xpse && ((ypse <= ybid-10 && ypse >= ybse+10) || (ypid <= ybid-10 && ypid >= ybse+10))) || (ybse == ypse && ((xpse <= xbid-10 && xpse >= xbse+10) || (xpid <= xbid-10 && xpid >= xbse+10)))) {
+            if (bolinhas[i]->getDisplay() == true) {
+                bolinhas[i]->setDisplay();
+                personagem->setScore(personagem->getScore()+bolinhas[i]->getScore());
+                if (bolinhas[i]->getPower() == true && personagem->getPower() == false) {
+                    personagem->setPower();
+                }
+                if (bolinhas[i]->getPower() == false) (*cont)++;
+            }
+        }
+    }
+
     for (int i = 0; i < inimigos.size(); i++) {
         int xise = inimigos[i]->getTextura()->getTarget().x;
         int yise = inimigos[i]->getTextura()->getTarget().y;
@@ -143,31 +160,18 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
 
 
         if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
-            if (personagem->getPower() == true && personagem->getGhost() == false && inimigos[i]->getGhost() == true) {
-                inimigos[i]->setLife(inimigos[i]->getLife()-1);
-                return 0;
-            }
-            return 1;
-        }
-    }
-    int cont = 0;
-    for (int i = 0; i < bolinhas.size(); i++) {
-        int xbse = bolinhas[i]->getTextura()->getTarget().x;
-        int ybse = bolinhas[i]->getTextura()->getTarget().y;
-        int xbid = bolinhas[i]->getTextura()->getTarget().x+29;
-        int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
-        if (xbse == xpse && ybse == ypse) {
-            if (bolinhas[i]->getDisplay() == true) {
-                bolinhas[i]->setDisplay();
-                personagem->setScore(personagem->getScore()+bolinhas[i]->getScore());
-                if (bolinhas[i]->getPower() == true) {
-                    personagem->setPower();
+            if (inimigos[i]->getLife() >= 0) {
+                if (personagem->getPower() == true && personagem->getGhost() == false && inimigos[i]->getGhost() == true) {
+                    inimigos[i]->setLife(inimigos[i]->getLife()-1);
+                    personagem->setScore(personagem->getScore()+(100*(i+1)));
+                    return 0;
                 }
-                cont++;
+                return 1;
             }
         }
     }
-    if (cont == bolinhas.size()) return 2;
+    std::cout << "Score: "<< personagem->getScore() <<" ----------------- Extra Life: "<< personagem->getLife() <<"/2\n" <<std::endl;
+    if ((*cont) == bolinhas.size()-4) return 2;
     return 0;
 }
 
@@ -182,20 +186,20 @@ void Jogo::localNpcControl(std::shared_ptr<Personagem> personagem, std::shared_p
     int ty = textura->getTarget().y;
     if (random0 == 0 || (x[i] == 0 && y[i] == 0)) {
         if (random1 == 0 && random2 == 0) {
-            newX = -1;
+            newX = -2;
             newY = 0;
         }
         else if (random1 == 0 && random2 == 1) {
-            newX = 1;
+            newX = 2;
             newY = 0;
         }
         else if (random1 == 1 && random2 == 0 && (cenarioJogo->getMap()[ty-1][tx] == 2 || cenarioJogo->getMap()[ty+30][tx] == 2 || cenarioJogo->getMap()[ty][tx] != 5)) {
             newX = 0;
-            newY = -1;
+            newY = -2;
         }
         else if (random1 == 1 && random2 == 1 && cenarioJogo->getMap()[ty][tx] != 2 && cenarioJogo->getMap()[ty+29][tx] != 2 && cenarioJogo->getMap()[ty+30][tx] != 2 && cenarioJogo->getMap()[ty][tx] != 5) {
             newX = 0;
-            newY = 1;
+            newY = 2;
         }
     }
     int j = setCharacterPosition(personagem, cenarioJogo, newX, newY, x[i], y[i]);
@@ -215,6 +219,9 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
     
     bool rodando = true;
 
+    std::shared_ptr<int> cont (new int);
+    (*cont) = 0;
+
     std::shared_ptr<int> x (new int);
     std::shared_ptr<int> y (new int);
     (*x) = 0;
@@ -229,7 +236,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         setInitialPosition(inimigos[i], cenarioJogo);
     }
     while(rodando) {
-        int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y);
+        int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
         if (res == 2) rodando = false;
         if(personagem->getLife() >= 0 && res == 1) {
             personagem->setLife(personagem->getLife()-1);
@@ -251,7 +258,6 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         view->renderClear();
         view->renderBackground(cenarioJogo->getTextura());
         for (int i = 0; i < bolinhas.size(); i++) {
-            printf("i = %d; j = %d; num = %d\n", bolinhas[i]->getTextura()->getTarget().y, bolinhas[i]->getTextura()->getTarget().x, i);
             if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
         }
         for (int i = 0; i < inimigos.size(); i++) {

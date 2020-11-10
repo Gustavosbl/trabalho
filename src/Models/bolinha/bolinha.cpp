@@ -4,8 +4,10 @@ Bolinha::Bolinha(int** ball, bool power1, int size1, char const* path)
 {
     power = power1;
     size = size1;
-    score = 0;
+    score = 10;
     display = true;
+    if (power1 == true) score = 50;
+
 
     // int mapa[1][1] = {{6}};
     int **mapa = ball;
@@ -49,15 +51,15 @@ Bolinha::Bolinha(int** ball, bool power1, int size1, char const* path)
                 img.b[idx] = 0;
             }
             else if (power1 == true && i > 5 && i < 24 && j > 5 && j < 24) {
-                if (i > 11 && i < 18 && j > 11 && j < 18) {
+                if (i > 7 && i < 22 && j > 7 && j < 22) {
                     img.r[idx] = 255;
                     img.g[idx] = 255;
                     img.b[idx] = 0;
                 }
                 else {
-                    img.r[idx] = 0;
+                    img.r[idx] = 255;
                     img.g[idx] = 255;
-                    img.b[idx] = 0;
+                    img.b[idx] = 255;
                 }
             }
             else {
