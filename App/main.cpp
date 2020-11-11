@@ -30,6 +30,7 @@ int mapa1[21][25] =
         };
 
 int main() {
+    srand(time(0));
     const unsigned int screenHeight = 630;
     const unsigned int screenWidth = 750;
 
