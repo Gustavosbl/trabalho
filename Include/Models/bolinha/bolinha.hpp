@@ -22,4 +22,5 @@ class Bolinha {
         void setSize(int size1);
         int getSize();
         unsigned long int getScore();
+        void setScore(unsigned long int score1);
 };

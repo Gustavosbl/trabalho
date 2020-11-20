@@ -111,3 +111,7 @@ int Bolinha::getSize()
 unsigned long int Bolinha::getScore(){
     return score;
 };
+
+void Bolinha::setScore(unsigned long int score1) {
+    score = score1;
+}

@@ -34,6 +34,11 @@ void View::renderPresent() {
     SDL_RenderPresent(renderer);
 }
 
+void View::renderMain(std::shared_ptr<Textura> textura){
+    SDL_RenderCopy(renderer, textura->getTextura(), nullptr, nullptr);
+
+};
+
 int View::setWindow(){
     window = SDL_CreateWindow("Pac-Men",
       SDL_WINDOWPOS_UNDEFINED,

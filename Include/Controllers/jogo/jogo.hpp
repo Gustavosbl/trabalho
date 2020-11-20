@@ -5,10 +5,14 @@
 #include "../../Views/view.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <fstream>
+#include <sstream>
 #include <iostream>
+#include "./json.hpp"
 #include <memory>
 #include <cstdlib>
 #include <vector>
+using nlohmann::json;
 
 class Jogo{
     public:

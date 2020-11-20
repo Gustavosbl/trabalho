@@ -210,6 +210,7 @@ void Jogo::localNpcControl(std::shared_ptr<Personagem> personagem, std::shared_p
 }
 
 void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, int multi) {
+    int state = 0;
 
     SDL_Event event;
 
@@ -218,6 +219,10 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
     setInitialPosition(personagem, cenarioJogo);
     
     bool rodando = true;
+
+    char const *img3 = "./assets/principal.jpg";
+
+    std::shared_ptr<Textura> textura3 (new Textura(view->getRenderer(), img3, 0, 0)); // textura 2 (fundo)
 
     std::shared_ptr<int> cont (new int);
     (*cont) = 0;
@@ -236,35 +241,128 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         setInitialPosition(inimigos[i], cenarioJogo);
     }
     while(rodando) {
-        int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-        if (res == 2) rodando = false;
-        if(personagem->getLife() >= 0 && res == 1) {
-            personagem->setLife(personagem->getLife()-1);
-            if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
-            else {
-                if (multi == 0) {
-                    rodando = false; 
+        if (state == 0) {
+            teclado->updateState();
+            if ((teclado->getState())[SDL_SCANCODE_RETURN]) {
+                state = 1;
+            }
+            else if ((teclado->getState())[SDL_SCANCODE_SPACE]) {
+
+                std::ifstream arquivo;
+                std::stringstream s;
+                arquivo.open("save.txt");
+                if (arquivo.is_open() ) {
+                    s << arquivo.rdbuf();
+                    auto j3 = json::parse(s.str());
+                    
+                    personagem->setLife(j3["personagem"]["life"].get<int>());
+                    personagem->setScore(j3["personagem"]["score"].get<int>());
+                    if (j3["personagem"]["power"].get<bool>()) personagem->setPower();
+                    personagem->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
+
+                    std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
+                    for (int i = 0; i < inimigos.size(); i++) {
+                        inimigos[i]->setLife(in[i]["life"].get<int>());
+                        inimigos[i]->getTextura()->setTarget(in[i]["x"].get<int>(), in[i]["y"].get<int>());
+                    }
+
+                    std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+                    for (int i = 0; i < bolinhas.size(); i++) {
+                        if (!pt[i]["display"].get<bool>()) bolinhas[i]->setDisplay();
+                        if (pt[i]["power"].get<bool>()) bolinhas[i]->setPower();
+                        bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+                        bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+                    }
+                    
+                    arquivo.close();
+                }
+                state = 1;
+            }
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
                 }
             }
+            view->renderClear();
+            view->renderMain(textura3);
+            view->renderPresent();
+            SDL_Delay(10);
+
         }
-        for (int i = 0; i < inimigos.size(); i++) {
-            localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
-        }
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                rodando = false;
+        if (state == 1) {
+            int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
+            if (res == 2) rodando = false;
+            if(personagem->getLife() >= 0 && res == 1) {
+                personagem->setLife(personagem->getLife()-1);
+                if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
+                else {
+                    if (multi == 0) {
+                        rodando = false; 
+                    }
+                }
             }
+            for (int i = 0; i < inimigos.size(); i++) {
+                localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
+            }
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    json j;
+                    json ps;   
+
+                    //save main character
+                    ps["x"] = personagem->getTextura()->getTarget().x;
+                    ps["y"] = personagem->getTextura()->getTarget().y;
+                    ps["score"] = personagem->getScore();
+                    ps["life"] = personagem->getLife();
+                    ps["power"] = personagem->getPower();
+
+
+                    std::vector<json> enemies;
+                    //save enemies
+                    for (int i = 0; i < inimigos.size(); i++) {
+                        json en;
+                        en["x"] = inimigos[i]->getTextura()->getTarget().x;
+                        en["y"] = inimigos[i]->getTextura()->getTarget().y;
+                        en["life"] = inimigos[i]->getLife();
+                        enemies.push_back(en);
+                    }
+
+                    std::vector<json> points;
+                    //save points
+                    for (int i = 0; i < bolinhas.size(); i++) {
+                        json pts;
+                        pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
+                        pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
+                        pts["display"] = bolinhas[i]->getDisplay();
+                        pts["power"] = bolinhas[i]->getPower();
+                        pts["score"] = bolinhas[i]->getScore();
+                        points.push_back(pts);
+                    }
+
+                    std::ofstream arquivo1;
+                    arquivo1.open("save.txt");
+
+                    j["personagem"] = ps;
+                    j["inimigos"] = enemies;
+                    j["bolinhas"] = points;
+                    arquivo1 << j << std::endl;
+                    arquivo1.close();
+                    rodando = false;
+                }
+            }
+            view->renderClear();
+            view->renderBackground(cenarioJogo->getTextura());
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+            }
+            for (int i = 0; i < inimigos.size(); i++) {
+                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
+            }
+            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
+            view->renderPresent();
+
+            //save
+            SDL_Delay(10);
         }
-        view->renderClear();
-        view->renderBackground(cenarioJogo->getTextura());
-        for (int i = 0; i < bolinhas.size(); i++) {
-            if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-        }
-        for (int i = 0; i < inimigos.size(); i++) {
-            if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
-        }
-        if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
-        view->renderPresent();
-        SDL_Delay(10);
     }
 };
