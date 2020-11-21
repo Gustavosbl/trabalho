@@ -170,7 +170,7 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
             }
         }
     }
-    std::cout << "Score: "<< personagem->getScore() <<" ----------------- Extra Life: "<< personagem->getLife() <<"/2\n" <<std::endl;
+    std::cout << "Score: "<< personagem->getScore() <<" ----------------- Extra Life: "<< personagem->getLife() <<"/2 ----------------- Power: " << personagem->getPower() << "\n" <<std::endl;
     if ((*cont) == bolinhas.size()-4) return 2;
     return 0;
 }
@@ -220,9 +220,17 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
     
     bool rodando = true;
 
-    char const *img3 = "./assets/principal.jpg";
+    char const *img3 = "./assets/pacwpp.jpg";
 
     std::shared_ptr<Textura> textura3 (new Textura(view->getRenderer(), img3, 0, 0)); // textura 2 (fundo)
+
+    char const *img4 = "./assets/pacwpp2.jpg";
+
+    std::shared_ptr<Textura> textura4 (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
+
+    char const *img5 = "./assets/pacwpp3.jpg";
+
+    std::shared_ptr<Textura> textura5 (new Textura(view->getRenderer(), img5, 0, 0)); // textura 2 (fundo)
 
     std::shared_ptr<int> cont (new int);
     (*cont) = 0;
@@ -257,7 +265,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                     
                     personagem->setLife(j3["personagem"]["life"].get<int>());
                     personagem->setScore(j3["personagem"]["score"].get<int>());
-                    if (j3["personagem"]["power"].get<bool>()) personagem->setPower();
+                    if (j3["personagem"]["power"].get<bool>() == 1) personagem->setPower();
                     personagem->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
 
                     std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
@@ -268,8 +276,10 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
                     std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
                     for (int i = 0; i < bolinhas.size(); i++) {
-                        if (!pt[i]["display"].get<bool>()) bolinhas[i]->setDisplay();
-                        if (pt[i]["power"].get<bool>()) bolinhas[i]->setPower();
+                        if (pt[i]["display"].get<bool>() == 0) {
+                            bolinhas[i]->setDisplay();
+                            (*cont)++;
+                        }
                         bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
                         bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
                     }
@@ -291,13 +301,13 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         }
         if (state == 1) {
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-            if (res == 2) rodando = false;
+            if (res == 2) state = 2;
             if(personagem->getLife() >= 0 && res == 1) {
                 personagem->setLife(personagem->getLife()-1);
                 if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
                 else {
                     if (multi == 0) {
-                        rodando = false; 
+                        state = 3; 
                     }
                 }
             }
@@ -334,7 +344,6 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                         pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
                         pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
                         pts["display"] = bolinhas[i]->getDisplay();
-                        pts["power"] = bolinhas[i]->getPower();
                         pts["score"] = bolinhas[i]->getScore();
                         points.push_back(pts);
                     }
@@ -363,6 +372,30 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
             //save
             SDL_Delay(10);
+        }
+        if (state == 2) {
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
+                }
+            }
+            view->renderClear();
+            view->renderMain(textura5);
+            view->renderPresent();
+            SDL_Delay(10);
+
+        }
+        if (state == 3) {
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
+                }
+            }
+            view->renderClear();
+            view->renderMain(textura4);
+            view->renderPresent();
+            SDL_Delay(10);
+
         }
     }
 };

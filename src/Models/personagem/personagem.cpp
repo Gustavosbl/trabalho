@@ -13,9 +13,9 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
     // int mapa[1][1] = {{6}};
     int **mapa = pac;
     imagem img;
-    int factor = 30;
-    int width = factor * 1;
-    int height = factor * 1;
+    int factor = 3;
+    int width = factor * 10;
+    int height = factor * 10;
     img.width = width;
     img.height = height;
     img.r = (float*)malloc(sizeof(float) * img.width * img.height);
@@ -27,9 +27,9 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
         mapa2[i] = (int *)malloc(width * sizeof(int));
     }
 
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 10; i++)
     {
-        for (int j = 0; j < 1; j++)
+        for (int j = 0; j < 10; j++)
         {
             for (int k = 0; k < factor; k++)
             {
@@ -50,9 +50,16 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
         for (int j = 0; j < height; j++)
         {
             int idx = i + (j * img.width);
-            img.r[idx] = r;
-            img.g[idx] = g;
-            img.b[idx] = b;
+            if (mapa2[i][j] == 0) {
+                img.r[idx] = NULL;
+                img.g[idx] = NULL;
+                img.b[idx] = NULL;
+            }
+            else {
+                img.r[idx] = r;
+                img.g[idx] = g;
+                img.b[idx] = b;
+            }
         }
     }
 

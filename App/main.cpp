@@ -29,6 +29,19 @@ int mapa1[21][25] =
             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 21
         };
 
+int pacman2[10][10] = {
+    {0, 0, 0, 0, 6, 6, 0, 0, 0, 0},
+    {0, 0, 6, 6, 6, 6, 6, 6, 0, 0},
+    {0, 6, 6, 6, 6, 6, 6, 6, 6, 0},
+    {0, 6, 6, 6, 6, 6, 6, 6, 6, 0},
+    {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+    {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+    {0, 6, 6, 6, 6, 6, 6, 6, 6, 0},
+    {0, 6, 6, 6, 6, 6, 6, 6, 6, 0},
+    {0, 0, 6, 6, 6, 6, 6, 6, 0, 0},
+    {0, 0, 0, 0, 6, 6, 0, 0, 0, 0},
+};
+
 int main() {
     srand(time(0));
     const unsigned int screenHeight = 630;
@@ -70,13 +83,21 @@ int main() {
             }
         }
     }
-    int **pacman = (int**)malloc(sizeof(int*));
-    pacman[0] = (int*)malloc(sizeof(int));
-    pacman[0][0] = 6;
+    int **pacman = (int**)malloc(sizeof(int*)*10);
+    for (int i = 0; i < 10; i++) {
+        pacman[i] = (int*)malloc(sizeof(int)*10);
+        for (int j = 0; j < 10; j++) {
+            pacman[i][j] = pacman2[i][j];
+        }
+    }
 
-    int **npc1 = (int**)malloc(sizeof(int*));
-    npc1[0] = (int*)malloc(sizeof(int));
-    npc1[0][0] = 6;
+    int **npc1 = (int**)malloc(sizeof(int*)*10);
+    for (int i = 0; i < 10; i++) {
+        npc1[i] = (int*)malloc(sizeof(int)*10);
+        for (int j = 0; j < 10; j++) {
+            npc1[i][j] = pacman2[i][j];
+        }
+    }
 
     
     char const *img1 = "./assets/pacman.jpg";
