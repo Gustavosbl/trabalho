@@ -19,6 +19,7 @@ target_link_libraries(PacMen  SDL2_image)
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 
+
 # Especificar onde estao os header files
 include_directories(Include/Controllers)
 include_directories(Include/Models)
@@ -43,9 +44,7 @@ target_link_libraries(PacMen textura)
 target_link_libraries(textura freeimage)
 target_link_libraries(textura SDL2)
 
-target_link_libraries(textura IMG_LoadTexture)
-
-
+target_link_libraries(textura SDL2_image)
 
 
 add_library(view src/Views/view.cpp)
@@ -60,8 +59,6 @@ target_link_libraries(imageprocessing freeimage)
 add_library(jogo src/Controllers/jogo/jogo.cpp)
 target_link_libraries(PacMen jogo)
 target_link_libraries(jogo SDL2)
-
-
 
 
 # Garantir que usaremos C++11 (ou superior, se preciso)
