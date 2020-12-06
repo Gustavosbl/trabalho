@@ -84,17 +84,17 @@ std::shared_ptr<Textura> Bolinha::getTextura()
 {
     return textura;
 };
-void Bolinha::setPower()
+void Bolinha::setPower(bool power1)
 {
-    power = !power;
+    power = power1;
 };
 bool Bolinha::getPower()
 {
     return power;
 };
-void Bolinha::setDisplay()
+void Bolinha::setDisplay(bool display1)
 {
-    display = !display;
+    display = display1;
 };
 bool Bolinha::getDisplay()
 {

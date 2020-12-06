@@ -142,7 +142,7 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
         int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
         if ((xbse == xpse && ((ypse <= ybid-10 && ypse >= ybse+10) || (ypid <= ybid-10 && ypid >= ybse+10))) || (ybse == ypse && ((xpse <= xbid-10 && xpse >= xbse+10) || (xpid <= xbid-10 && xpid >= xbse+10)))) {
             if (bolinhas[i]->getDisplay() == true) {
-                bolinhas[i]->setDisplay();
+                bolinhas[i]->setDisplay(false);
                 personagem->setScore(personagem->getScore()+bolinhas[i]->getScore());
                 if (bolinhas[i]->getPower() == true && personagem->getPower() == false) {
                     personagem->setPower();
@@ -276,11 +276,9 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
                     std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
                     for (int i = 0; i < bolinhas.size(); i++) {
-                        if (pt[i]["display"].get<bool>() == false) {
-                            bolinhas[i]->setDisplay();
-                            if (pt[i]["power"].get<bool>() == false) {
-                                (*cont)++;
-                            }
+                        bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+                        if (pt[i]["display"].get<bool>() == false && pt[i]["power"].get<bool>() == false) {
+                            (*cont)++;
                         }
                         bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
                         bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
@@ -289,12 +287,15 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                     arquivo.close();
                 }
                 state = 1;
+                rodando = false;
             }
             else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
                 state = 4;
+                rodando = false;
             }
             else if ((teclado->getState())[SDL_SCANCODE_ESCAPE]) {
                 state = 5;
+                rodando = false;
             }
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
@@ -307,7 +308,10 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             SDL_Delay(10);
 
         }
-        if (state == 1) {
+    }
+    rodando = true;
+    if (state == 1) {
+        while (rodando) {
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
             if (res == 2) state = 2;
             if(personagem->getLife() >= 0 && res == 1) {
@@ -382,7 +386,9 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             //save
             SDL_Delay(10);
         }
-        if (state == 2) {
+    }
+    if (state == 2) {
+        while (rodando) {
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
                     rodando = false;
@@ -392,9 +398,10 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             view->renderMain(textura5);
             view->renderPresent();
             SDL_Delay(10);
-
         }
-        if (state == 3) {
+    }
+    if (state == 3) {
+        while (rodando) {
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
                     rodando = false;
@@ -404,25 +411,25 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             view->renderMain(textura4);
             view->renderPresent();
             SDL_Delay(10);
-
         }
-        if (state == 4) {
-            std::cout << "SERVER SIDE" << std::endl;
-            boost::asio::io_service my_io_service; // Conecta com o SO
+    }
+    if (state == 4) {
+        std::cout << "SERVER SIDE" << std::endl;
+        boost::asio::io_service my_io_service; // Conecta com o SO
 
-            udp::endpoint local_endpoint(udp::v4(), 9001); // endpoint: contem
-                                                            // conf. da conexao (ip/port)
+        udp::endpoint local_endpoint(udp::v4(), 9001); // endpoint: contem
+                                                        // conf. da conexao (ip/port)
 
-            udp::socket my_socket(my_io_service,   // io service
-                                    local_endpoint); // endpoint
+        udp::socket my_socket(my_io_service,   // io service
+                                local_endpoint); // endpoint
 
-            udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
 
-            char v[120];
-            my_socket.receive_from(boost::asio::buffer(v, 120), // Local do buffer
-                           remote_endpoint);            // Confs. do Cliente
-            std::cout << v << std::endl;
-
+        char v[120];
+        my_socket.receive_from(boost::asio::buffer(v, 120), // Local do buffer
+                        remote_endpoint);            // Confs. do Cliente
+        std::cout << v << std::endl;
+        while (rodando) {
 
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
             if (res == 2) state = 2;
@@ -477,6 +484,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             j["bolinhas"] = points;
             
             std::string s = j.dump();
+            std::cout << s << std::endl;
             my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
 
             while (SDL_PollEvent(&event)) {
@@ -498,27 +506,30 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             //save
             SDL_Delay(10);
         }
+    }
 
-        if (state == 5) {
-            std::cout << "CLIENT SIDE" << std::endl;
+    if (state == 5) {
+        std::cout << "CLIENT SIDE" << std::endl;
 
-            boost::asio::io_service io_service;
+        boost::asio::io_service io_service;
 
-            udp::endpoint local_endpoint(udp::v4(), 0);
-            udp::socket meu_socket(io_service, local_endpoint);
+        udp::endpoint local_endpoint(udp::v4(), 0);
+        udp::socket meu_socket(io_service, local_endpoint);
 
-            // Encontrando IP remoto
-            boost::asio::ip::address ip_remoto =
-                boost::asio::ip::address::from_string("127.0.0.1");
+        // Encontrando IP remoto
+        boost::asio::ip::address ip_remoto =
+            boost::asio::ip::address::from_string("127.0.0.1");
 
-            udp::endpoint remote_endpoint(ip_remoto, 9001);
+        udp::endpoint remote_endpoint(ip_remoto, 9001);
 
-            std::string s = "local";
-            meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+        std::string s = "local";
+        meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+        char v[100000];
 
-            char v[100000];
-            memset(v, 0, 255);
+        while (rodando) {
+            memset(v, 0, 100000);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), remote_endpoint);
+            std::cout << v << std::endl;
             json j3 = json::parse(v);
                     
             personagem->setLife(j3["personagem"]["life"].get<int>());
@@ -534,11 +545,9 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
             std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
             for (int i = 0; i < bolinhas.size(); i++) {
-                if (pt[i]["display"].get<bool>() == false) {
-                    bolinhas[i]->setDisplay();
-                    if (pt[i]["power"].get<bool>() == false) {
-                        (*cont)++;
-                    }
+                bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+                if (pt[i]["display"].get<bool>() == false && pt[i]["power"].get<bool>() == false) {
+                    (*cont)++;
                 }
                 bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
                 bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
@@ -554,6 +563,12 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             }
             if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
             view->renderPresent();
+
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
+                }
+            }
 
             //save
             SDL_Delay(10);

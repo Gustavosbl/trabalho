@@ -15,9 +15,9 @@ class Bolinha {
         ~Bolinha();
         void setTextura(std::shared_ptr<Textura> textura1);
         std::shared_ptr<Textura> getTextura();
-        void setPower();
+        void setPower(bool power1);
         bool getPower();
-        void setDisplay();
+        void setDisplay(bool display1);
         bool getDisplay();
         void setSize(int size1);
         int getSize();
