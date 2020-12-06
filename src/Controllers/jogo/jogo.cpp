@@ -293,7 +293,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
                 state = 4;
             }
-            else if ((teclado->getState())[SDL_SCANCODE_BACKSPACE]) {
+            else if ((teclado->getState())[SDL_SCANCODE_ESCAPE]) {
                 state = 5;
             }
             while (SDL_PollEvent(&event)) {
@@ -418,6 +418,11 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
             udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
 
+            char v[120];
+            my_socket.receive_from(boost::asio::buffer(v, 120), // Local do buffer
+                           remote_endpoint);            // Confs. do Cliente
+            std::cout << v << std::endl;
+
 
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
             if (res == 2) state = 2;
@@ -508,6 +513,9 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
             udp::endpoint remote_endpoint(ip_remoto, 9001);
 
+            std::string s = "local";
+            meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+
             char v[100000];
             memset(v, 0, 255);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), remote_endpoint);
@@ -535,6 +543,20 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                 bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
                 bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
             }
+
+            view->renderClear();
+            view->renderBackground(cenarioJogo->getTextura());
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+            }
+            for (int i = 0; i < inimigos.size(); i++) {
+                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
+            }
+            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
+            view->renderPresent();
+
+            //save
+            SDL_Delay(10);
         }
     }
 };
