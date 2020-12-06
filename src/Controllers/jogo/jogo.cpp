@@ -276,9 +276,11 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
                     std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
                     for (int i = 0; i < bolinhas.size(); i++) {
-                        if (pt[i]["display"].get<bool>() == 0) {
+                        if (pt[i]["display"].get<bool>() == false) {
                             bolinhas[i]->setDisplay();
-                            (*cont)++;
+                            if (pt[i]["power"].get<bool>() == false) {
+                                (*cont)++;
+                            }
                         }
                         bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
                         bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
@@ -345,6 +347,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                         pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
                         pts["display"] = bolinhas[i]->getDisplay();
                         pts["score"] = bolinhas[i]->getScore();
+                        pts["power"] = bolinhas[i]->getPower();
                         points.push_back(pts);
                     }
 
