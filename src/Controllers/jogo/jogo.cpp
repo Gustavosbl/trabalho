@@ -290,6 +290,12 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
                 }
                 state = 1;
             }
+            else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
+                state = 4;
+            }
+            else if ((teclado->getState())[SDL_SCANCODE_BACKSPACE]) {
+                state = 5;
+            }
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
                     rodando = false;
@@ -399,6 +405,136 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             view->renderPresent();
             SDL_Delay(10);
 
+        }
+        if (state == 4) {
+            std::cout << "SERVER SIDE" << std::endl;
+            boost::asio::io_service my_io_service; // Conecta com o SO
+
+            udp::endpoint local_endpoint(udp::v4(), 9001); // endpoint: contem
+                                                            // conf. da conexao (ip/port)
+
+            udp::socket my_socket(my_io_service,   // io service
+                                    local_endpoint); // endpoint
+
+            udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+
+
+            int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
+            if (res == 2) state = 2;
+            if(personagem->getLife() >= 0 && res == 1) {
+                personagem->setLife(personagem->getLife()-1);
+                if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
+                else {
+                    if (multi == 0) {
+                        state = 3; 
+                    }
+                }
+            }
+            for (int i = 0; i < inimigos.size(); i++) {
+                localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
+            }
+
+            json j;
+            json ps;   
+
+            //save main character
+            ps["x"] = personagem->getTextura()->getTarget().x;
+            ps["y"] = personagem->getTextura()->getTarget().y;
+            ps["score"] = personagem->getScore();
+            ps["life"] = personagem->getLife();
+            ps["power"] = personagem->getPower();
+
+
+            std::vector<json> enemies;
+            //save enemies
+            for (int i = 0; i < inimigos.size(); i++) {
+                json en;
+                en["x"] = inimigos[i]->getTextura()->getTarget().x;
+                en["y"] = inimigos[i]->getTextura()->getTarget().y;
+                en["life"] = inimigos[i]->getLife();
+                enemies.push_back(en);
+            }
+
+            std::vector<json> points;
+            //save points
+            for (int i = 0; i < bolinhas.size(); i++) {
+                json pts;
+                pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
+                pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
+                pts["display"] = bolinhas[i]->getDisplay();
+                pts["score"] = bolinhas[i]->getScore();
+                pts["power"] = bolinhas[i]->getPower();
+                points.push_back(pts);
+            }
+
+            j["personagem"] = ps;
+            j["inimigos"] = enemies;
+            j["bolinhas"] = points;
+            
+            std::string s = j.dump();
+            my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
+                }
+            }
+            view->renderClear();
+            view->renderBackground(cenarioJogo->getTextura());
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+            }
+            for (int i = 0; i < inimigos.size(); i++) {
+                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
+            }
+            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
+            view->renderPresent();
+
+            //save
+            SDL_Delay(10);
+        }
+
+        if (state == 5) {
+            std::cout << "CLIENT SIDE" << std::endl;
+
+            boost::asio::io_service io_service;
+
+            udp::endpoint local_endpoint(udp::v4(), 0);
+            udp::socket meu_socket(io_service, local_endpoint);
+
+            // Encontrando IP remoto
+            boost::asio::ip::address ip_remoto =
+                boost::asio::ip::address::from_string("127.0.0.1");
+
+            udp::endpoint remote_endpoint(ip_remoto, 9001);
+
+            char v[100000];
+            memset(v, 0, 255);
+            meu_socket.receive_from(boost::asio::buffer(v, 100000), remote_endpoint);
+            json j3 = json::parse(v);
+                    
+            personagem->setLife(j3["personagem"]["life"].get<int>());
+            personagem->setScore(j3["personagem"]["score"].get<int>());
+            if (j3["personagem"]["power"].get<bool>() == 1) personagem->setPower();
+            personagem->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
+
+            std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
+            for (int i = 0; i < inimigos.size(); i++) {
+                inimigos[i]->setLife(in[i]["life"].get<int>());
+                inimigos[i]->getTextura()->setTarget(in[i]["x"].get<int>(), in[i]["y"].get<int>());
+            }
+
+            std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (pt[i]["display"].get<bool>() == false) {
+                    bolinhas[i]->setDisplay();
+                    if (pt[i]["power"].get<bool>() == false) {
+                        (*cont)++;
+                    }
+                }
+                bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+                bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+            }
         }
     }
 };

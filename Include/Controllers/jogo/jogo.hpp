@@ -12,7 +12,10 @@
 #include <memory>
 #include <cstdlib>
 #include <vector>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 using nlohmann::json;
+using boost::asio::ip::udp;
 
 class Jogo{
     public:
