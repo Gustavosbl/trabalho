@@ -314,13 +314,17 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
     if (state == 1) {
         while (rodando) {
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-            if (res == 2) state = 2;
+            if (res == 2) {
+                state = 2;
+                rodando = false;    
+            }
             if(personagem->getLife() >= 0 && res == 1) {
                 personagem->setLife(personagem->getLife()-1);
                 if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
                 else {
                     if (multi == 0) {
                         state = 3; 
+                        rodando = false;
                     }
                 }
             }
@@ -387,33 +391,35 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             //save
             SDL_Delay(10);
         }
-    }
-    if (state == 2) {
-        while (rodando) {
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    rodando = false;
+        rodando = true;
+        if (state == 2) {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
                 }
+                view->renderClear();
+                view->renderMain(textura5);
+                view->renderPresent();
+                SDL_Delay(10);
             }
-            view->renderClear();
-            view->renderMain(textura5);
-            view->renderPresent();
-            SDL_Delay(10);
+        }
+        if (state == 3) {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
+                }
+                view->renderClear();
+                view->renderMain(textura4);
+                view->renderPresent();
+                SDL_Delay(10);
+            }
         }
     }
-    if (state == 3) {
-        while (rodando) {
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    rodando = false;
-                }
-            }
-            view->renderClear();
-            view->renderMain(textura4);
-            view->renderPresent();
-            SDL_Delay(10);
-        }
-    }
+
     if (state == 4) {
         std::cout << "SERVER SIDE" << std::endl;
         boost::asio::io_service my_io_service; // Conecta com o SO
@@ -429,17 +435,24 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         char v[120];
         my_socket.receive_from(boost::asio::buffer(v, 120), // Local do buffer
                         remote_endpoint);            // Confs. do Cliente
-        std::cout << v << std::endl;
         while (rodando) {
 
             int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-            if (res == 2) state = 2;
+            if (res == 2) {
+                state = 2;
+                std::string s = "win";
+                my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                rodando = false;
+            }
             if(personagem->getLife() >= 0 && res == 1) {
                 personagem->setLife(personagem->getLife()-1);
                 if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
                 else {
                     if (multi == 0) {
                         state = 3; 
+                        std::string s = "game_over";
+                        my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                        rodando = false;
                     }
                 }
             }
@@ -485,7 +498,6 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             j["bolinhas"] = points;
             
             std::string s = j.dump();
-            std::cout << s << std::endl;
             my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
 
             while (SDL_PollEvent(&event)) {
@@ -507,6 +519,33 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             //save
             SDL_Delay(10);
         }
+        rodando = true;
+        if (state == 2) {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
+                }
+                view->renderClear();
+                view->renderMain(textura5);
+                view->renderPresent();
+                SDL_Delay(10);
+            }
+        }
+        if (state == 3) {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
+                }
+                view->renderClear();
+                view->renderMain(textura4);
+                view->renderPresent();
+                SDL_Delay(10);
+            }
+        }
     }
 
     if (state == 5) {
@@ -526,11 +565,22 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
         std::string s = "local";
         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
         char v[100000];
+        char buff[] = "win";
+        char buff2[] = "game_over";
+        int win = 1;
 
         while (rodando) {
             memset(v, 0, 100000);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), remote_endpoint);
-            std::cout << v << std::endl;
+            if (strlen(v) < 9) {
+                rodando = false;
+                break;
+            }
+            else if (strlen(v) < 15) {
+                win = 0;
+                rodando = false;
+                break;
+            }
             json j3 = json::parse(v);
                     
             personagem->setLife(j3["personagem"]["life"].get<int>());
@@ -574,5 +624,35 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             //save
             SDL_Delay(10);
         }
+
+        rodando = true;
+
+        if (win == 1) {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
+                }
+                view->renderClear();
+                view->renderMain(textura5);
+                view->renderPresent();
+                SDL_Delay(10);
+            }
+        }
+        else {
+            while (rodando) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        rodando = false;
+                    }
+                }
+                view->renderClear();
+                view->renderMain(textura4);
+                view->renderPresent();
+                SDL_Delay(10);
+            }
+        }
+
     }
 };
