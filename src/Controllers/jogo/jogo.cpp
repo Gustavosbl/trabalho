@@ -253,6 +253,7 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
             teclado->updateState();
             if ((teclado->getState())[SDL_SCANCODE_RETURN]) {
                 state = 1;
+                rodando = false;
             }
             else if ((teclado->getState())[SDL_SCANCODE_SPACE]) {
 
