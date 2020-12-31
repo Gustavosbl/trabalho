@@ -761,8 +761,8 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
         std::string s = j.dump();
         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
 
-        char v[1000];
-        meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+        char v[100000];
+        meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                         remote_endpoint);
         json j2 = json::parse(v);
         std::string s1 = j2["response"];
@@ -931,8 +931,8 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
         while(1) {
 
-            char v[1000];
-            meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+            char v[100000];
+            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
 
@@ -978,11 +978,11 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
 
-        char v[1000];
+        char v[100000];
 
         while(1) {
-            memset(v, 0, 1000);
-            meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+            memset(v, 0, 100000);
+            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
             std::string s1 = j["request"].get<std::string>();
