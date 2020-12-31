@@ -764,12 +764,12 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
     std::string s1 = j2["response"];
     std::string s2 = "success";
     std::string s3 = "ip_already_connected";
-    bool rodando = true;
+    bool rodando = false;
     if (s1.compare(s2) == 0) {
         std::cout << "Connected Successfully" << std::endl;
         bool gameover = jogarMulti(view, teclado, name);
         if (gameover) {
-            rodando = false;
+            rodando = true;
         }
     }
     else if (s1.compare(s3) == 0) {
