@@ -1067,13 +1067,16 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 j2["characters"] = characters;
                 j2["bolinhas"] = points;
                 
+                std::string name = j["name"].get<std::string>();
                 for (int i = 0; i < personagens.size(); i++) {
-                    bool active = true;
-                    if (personagens[i]->getLife() < 0) active = false;
-                    j2["active"] = active;
-                    std::string s = j2.dump();
-                    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-                    if (active == false) personagens.erase(personagens.begin()+i);
+                    if (name.compare(personagens[i]->getName()) == 0) {
+                        bool active = true;
+                        if (personagens[i]->getLife() < 0) active = false;
+                        j2["active"] = active;
+                        std::string s = j2.dump();
+                        meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                        if (active == false) personagens.erase(personagens.begin()+i);
+                    }
                 }
             }
             else if (s1.compare(s3) == 0) {
