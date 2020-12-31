@@ -736,9 +736,25 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
         udp::endpoint local_endpoint(udp::v4(), 0);
         udp::socket meu_socket(io_service, local_endpoint);
 
+        json config;
+        std::ifstream file("config.txt");
+        std::string str;
+        size_t pos = 0;
+        std::string delimiter = "=";
+        while (std::getline(file, str)) {
+            pos = str.find(delimiter);
+            std::cout << pos << std::endl;
+            std::string token = str.substr(0, pos);
+            std::cout << token << std::endl;
+            str.erase(0, pos + delimiter.length());
+            std::string token2 = str;
+            std::cout << token2 << std::endl;
+            config[token] = token2;
+        }
+
         // Encontrando IP remoto
         boost::asio::ip::address ip_remoto =
-            boost::asio::ip::address::from_string("127.0.0.1");
+            boost::asio::ip::address::from_string(config["SERVER_IP"]);
 
         udp::endpoint remote_endpoint(ip_remoto, 9001);
 
@@ -763,6 +779,23 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
 }
 
 void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name) {
+
+    json config;
+    std::ifstream file("config.txt");
+    std::string str;
+    size_t pos = 0;
+    std::string delimiter = "=";
+    while (std::getline(file, str)) {
+        pos = str.find(delimiter);
+        std::cout << pos << std::endl;
+        std::string token = str.substr(0, pos);
+        std::cout << token << std::endl;
+        str.erase(0, pos + delimiter.length());
+        std::string token2 = str;
+        std::cout << token2 << std::endl;
+        config[token] = token2;
+    }
+
     SDL_Event event;
     std::vector<std::shared_ptr<Personagem>> personagens;
     std::vector<std::shared_ptr<Bolinha>> bolinhas;
@@ -775,7 +808,7 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
     // Encontrando IP remoto
     boost::asio::ip::address ip_remoto =
-        boost::asio::ip::address::from_string("127.0.0.1");
+        boost::asio::ip::address::from_string(config["SERVER_IP"]);
 
     udp::endpoint remote_endpoint1(ip_remoto, 9002);
     udp::endpoint remote_endpoint2(ip_remoto, 9003);
