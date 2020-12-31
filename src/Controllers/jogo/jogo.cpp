@@ -552,6 +552,8 @@ void Jogo::iniciarJogo(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecl
         }
         else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
             conectarServidor(view, teclado);
+            rodando = false;
+            break;
         }
 
         while (SDL_PollEvent(&event)) {
@@ -814,6 +816,7 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     udp::endpoint remote_endpoint2(ip_remoto, 9003);
 
 
+    char const* bolao = "./assets/bolao.jpg";
     criarBolinhas(bolinhas, view);
     criarCenario(cenarioJogo, view);
     int newX = 0;
@@ -860,7 +863,10 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         json j3 = json::parse(v);
         if (j3["active"].get<bool>() == false) {
             rodando = false;
-            break;
+            char const *img4 = "./assets/pacwpp2.jpg";
+            std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
+            rodando = true;
+            fimDeJogo(view, derrota);
         }
 
         std::vector<json> ch = j3["characters"].get<std::vector<json>>();
@@ -875,8 +881,13 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
         for (int i = 0; i < bolinhas.size(); i++) {
             bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+            bolinhas[i]->setPower(pt[i]["power"].get<bool>());
             bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
-            bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+            if (bolinhas[i]->getPower()) {
+                std::shared_ptr<Textura> bolaPoder (new Textura(view->getRenderer(), bolao, pt[i]["x"].get<int>(), pt[i]["y"].get<int>()));
+                bolinhas[i]->setTextura(bolaPoder);
+            }
+            else bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
         }
 
         view->renderClear();
@@ -892,12 +903,11 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 rodando = false;
+                j["request"] = "remove";
+                std::string s = j.dump();
+                meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
             }
         }
-
-        //save
-        SDL_Delay(10);
-
     }
 }
 
@@ -1027,6 +1037,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
             std::string s1 = j["request"].get<std::string>();
             std::string s2 = "data";
+            std::string s3 = "remove";
             if (s1.compare(s2) == 0) {
                 json j2;
 
@@ -1060,6 +1071,14 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                     else j2["active"] = true;
                     std::string s = j2.dump();
                     meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                }
+            }
+            else if (s1.compare(s3) == 0) {
+                std::string name = j["name"].get<std::string>();
+                for (int i = 0; i < personagens.size(); i++) {
+                    if (name.compare(personagens[i]->getName()) == 0) {
+                        personagens.erase(personagens.begin()+i);
+                    }
                 }
             }
         }
