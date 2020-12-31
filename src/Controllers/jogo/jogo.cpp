@@ -779,7 +779,6 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
     while(rodando) {
         char const *img4 = "./assets/pacwpp2.jpg";
         std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
-        rodando = true;
         fimDeJogo(view, derrota);
         rodando = false;
     }
@@ -870,9 +869,6 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         if (j3["active"].get<bool>() == false) {
             rodando = false;
             gameover = true;
-            j["request"] = "remove";
-            std::string s = j.dump();
-            meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
             break;
         }
 
@@ -915,7 +911,7 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
             }
         }
-        SDL_Delay(10);
+        SDL_Delay(2);
     }
 
     return gameover;
@@ -1039,11 +1035,18 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
         char v[100000];
         while(1) {
-            allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
             memset(v, 0, 100000);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
+
+            std::string name = j["name"].get<std::string>();
+            for (int i = 0; i < personagens.size(); i++) {
+                if (name.compare(personagens[i]->getName()) == 0) {
+                    personagens.erase(personagens.begin()+i);
+                }
+            }
+            allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
 
             std::string s1 = j["request"].get<std::string>();
             std::string s2 = "data";
