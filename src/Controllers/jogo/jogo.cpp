@@ -1061,11 +1061,12 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 j2["bolinhas"] = points;
                 
                 for (int i = 0; i < personagens.size(); i++) {
-                    if (personagens[i]->getLife() < 0) j2["active"] = false;
-                    else j2["active"] = true;
+                    bool active = true;
+                    if (personagens[i]->getLife() < 0) active = false;
+                    2["active"] = active;
                     std::string s = j2.dump();
                     meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-                    personagens.erase(personagens.begin()+i);
+                    if (active == false) personagens.erase(personagens.begin()+i);
                 }
             }
             else if (s1.compare(s3) == 0) {
