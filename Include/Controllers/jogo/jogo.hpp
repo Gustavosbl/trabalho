@@ -50,7 +50,7 @@ class Jogo{
         void darPoderParaBolinha(std::shared_ptr<Bolinha> bolinha, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<View> view, std::shared_ptr<int> cont);
         bool aindaTemBolinhas(std::vector<std::shared_ptr<Bolinha>> &bolinhas);
         void conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado);
-        void jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name);
+        bool jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name);
         void fimDeJogo(std::shared_ptr<View> view, std::shared_ptr<Textura> tela);
         void iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado);
 };

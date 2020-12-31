@@ -714,67 +714,74 @@ bool Jogo::aindaTemBolinhas(std::vector<std::shared_ptr<Bolinha>> &bolinhas) {
 
 
 void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
-        char hostname[HOST_NAME_MAX];
-        char username[LOGIN_NAME_MAX];
-        gethostname(hostname, HOST_NAME_MAX);
-        getlogin_r(username, LOGIN_NAME_MAX);
-        json j;
+    char hostname[HOST_NAME_MAX];
+    char username[LOGIN_NAME_MAX];
+    gethostname(hostname, HOST_NAME_MAX);
+    getlogin_r(username, LOGIN_NAME_MAX);
+    json j;
 
-        std::stringstream ss;
-        ss << username << "@" << hostname;
-        std::string name = ss.str();
+    std::stringstream ss;
+    ss << username << "@" << hostname;
+    std::string name = ss.str();
 
-        j["name"] = name;
-        j["request"] = "connect";
+    j["name"] = name;
+    j["request"] = "connect";
 
-        boost::asio::io_service io_service;
+    boost::asio::io_service io_service;
 
-        udp::endpoint local_endpoint(udp::v4(), 0);
-        udp::socket meu_socket(io_service, local_endpoint);
+    udp::endpoint local_endpoint(udp::v4(), 0);
+    udp::socket meu_socket(io_service, local_endpoint);
 
-        json config;
-        std::ifstream file("config.txt");
-        std::string str;
-        size_t pos = 0;
-        std::string delimiter = "=";
-        while (std::getline(file, str)) {
-            pos = str.find(delimiter);
-            std::cout << pos << std::endl;
-            std::string token = str.substr(0, pos);
-            std::cout << token << std::endl;
-            str.erase(0, pos + delimiter.length());
-            std::string token2 = str;
-            std::cout << token2 << std::endl;
-            config[token] = token2;
-        }
+    json config;
+    std::ifstream file("config.txt");
+    std::string str;
+    size_t pos = 0;
+    std::string delimiter = "=";
+    while (std::getline(file, str)) {
+        pos = str.find(delimiter);
+        std::cout << pos << std::endl;
+        std::string token = str.substr(0, pos);
+        std::cout << token << std::endl;
+        str.erase(0, pos + delimiter.length());
+        std::string token2 = str;
+        std::cout << token2 << std::endl;
+        config[token] = token2;
+    }
 
-        // Encontrando IP remoto
-        boost::asio::ip::address ip_remoto =
-            boost::asio::ip::address::from_string(config["SERVER_IP"]);
+    // Encontrando IP remoto
+    boost::asio::ip::address ip_remoto =
+        boost::asio::ip::address::from_string(config["SERVER_IP"]);
 
-        udp::endpoint remote_endpoint(ip_remoto, 9001);
+    udp::endpoint remote_endpoint(ip_remoto, 9001);
 
-        std::string s = j.dump();
-        meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+    std::string s = j.dump();
+    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
 
-        char v[1000];
-        meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
-                        remote_endpoint);
-        json j2 = json::parse(v);
-        std::string s1 = j2["response"];
-        std::string s2 = "success";
-        std::string s3 = "ip_already_connected";
-        if (s1.compare(s2) == 0) {
-            std::cout << "Connected Successfully" << std::endl;
-            jogarMulti(view, teclado, name);
-        }
-        else if (s1.compare(s3) == 0) {
-            std::cout << "IP already connected!" << std::endl;
-            return;
-        }
+    char v[1000];
+    meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+                    remote_endpoint);
+    json j2 = json::parse(v);
+    std::string s1 = j2["response"];
+    std::string s2 = "success";
+    std::string s3 = "ip_already_connected";
+    if (s1.compare(s2) == 0) {
+        std::cout << "Connected Successfully" << std::endl;
+        bool gameover = jogarMulti(view, teclado, name);
+    }
+    else if (s1.compare(s3) == 0) {
+        std::cout << "IP already connected!" << std::endl;
+        return;
+    }
+    bool rodando = true;
+    while(rodando) {
+        char const *img4 = "./assets/pacwpp2.jpg";
+        std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
+        rodando = true;
+        fimDeJogo(view, derrota);
+    }
 }
 
-void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name) {
+bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name) {
 
     json config;
     std::ifstream file("config.txt");
@@ -817,6 +824,7 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     int newY = 0;
     bool rodando = true;
     char v[1000000];
+    bool gameover = false;
     while (rodando) {
         json j;
 
@@ -857,10 +865,8 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         json j3 = json::parse(v);
         if (j3["active"].get<bool>() == false) {
             rodando = false;
-            char const *img4 = "./assets/pacwpp2.jpg";
-            std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
-            rodando = true;
-            fimDeJogo(view, derrota);
+            gameover = true;
+            break;
         }
 
         std::vector<json> ch = j3["characters"].get<std::vector<json>>();
@@ -903,6 +909,7 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
             }
         }
     }
+    return gameover;
 }
 
 void Jogo::fimDeJogo(std::shared_ptr<View> view, std::shared_ptr<Textura> tela) {
