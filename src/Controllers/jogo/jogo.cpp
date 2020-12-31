@@ -1043,7 +1043,9 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             std::string name = j["name"].get<std::string>();
             for (int i = 0; i < personagens.size(); i++) {
                 if (name.compare(personagens[i]->getName()) == 0) {
-                    personagens.erase(personagens.begin()+i);
+                    if (personagens[i]->getLife() < 0) {
+                        personagens.erase(personagens.begin()+i);
+                    }
                 }
             }
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
