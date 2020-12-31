@@ -162,18 +162,12 @@ void Jogo::allCharactersControl(std::vector<std::shared_ptr<Personagem>> &inimig
                         if(inimigos[i]->getLife() >= 0) {
                             setInitialPosition(inimigos[i], cenarioJogo);
                         }
-                        else {
-                            inimigos.erase(inimigos.begin()+i);
-                        }
                     }
                     else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
                         inimigos[k]->setLife(inimigos[k]->getLife()-1);
                         inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
                         if(inimigos[k]->getLife() >= 0) {
                             setInitialPosition(inimigos[k], cenarioJogo);
-                        }
-                        else {
-                            inimigos.erase(inimigos.begin()+i);
                         }
                     }
                 }
@@ -1071,6 +1065,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                     else j2["active"] = true;
                     std::string s = j2.dump();
                     meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                    personagens.erase(personagens.begin()+i);
                 }
             }
             else if (s1.compare(s3) == 0) {
