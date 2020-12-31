@@ -105,9 +105,92 @@ int Jogo::setCharacterPosition(std::shared_ptr<Personagem> personagem, std::shar
     }
 }
 
-int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Teclado> teclado, std::shared_ptr<int> x, std::shared_ptr<int> y, std::shared_ptr<int> cont) { 
+void Jogo::characterControl(std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, int vertical, int horizontal, std::shared_ptr<Timer> timer) { 
+    int newX = horizontal;
+    int newY = vertical;
+
+    if (personagem->getPowerTimer()->elapsedSeconds() > 10) {
+
+        if (personagem->getPower() == true) personagem->setPower();
+        personagem->getPowerTimer()->stop();
+    }
+
+    int i = setCharacterPosition(personagem, cenarioJogo, newX, newY, personagem->getX(), personagem->getY());
+    if (i == 0) {
+        personagem->setX(newX);
+        personagem->setY(newY);
+    }
+}
+
+void Jogo::allCharactersControl(std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Timer> timer) {
+    for (int k = 0; k < inimigos.size(); k++) {
+        int xpse = inimigos[k]->getTextura()->getTarget().x;
+        int ypse = inimigos[k]->getTextura()->getTarget().y;
+        int xpid = inimigos[k]->getTextura()->getTarget().x+29;
+        int ypid = inimigos[k]->getTextura()->getTarget().y+29;
+        for (int i = 0; i < bolinhas.size(); i++) {
+            int xbse = bolinhas[i]->getTextura()->getTarget().x;
+            int ybse = bolinhas[i]->getTextura()->getTarget().y;
+            int xbid = bolinhas[i]->getTextura()->getTarget().x+29;
+            int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
+            if ((xbse == xpse && ((ypse <= ybid-10 && ypse >= ybse+10) || (ypid <= ybid-10 && ypid >= ybse+10))) || (ybse == ypse && ((xpse <= xbid-10 && xpse >= xbse+10) || (xpid <= xbid-10 && xpid >= xbse+10)))) {
+                if (bolinhas[i]->getDisplay() == true) {
+                    bolinhas[i]->setDisplay(false);
+                    inimigos[k]->setScore(inimigos[k]->getScore()+bolinhas[i]->getScore());
+                    bolinhas[i]->setOldDisplay(false);
+                    if (bolinhas[i]->getPower() == true && inimigos[k]->getPower() == false) {
+                        inimigos[k]->setPower();
+                        timer->start();
+                        inimigos[k]->getPowerTimer()->start();
+                    }
+                }
+            }
+        }
+
+        for (int i = k+1; i < inimigos.size(); i++) {
+            int xise = inimigos[i]->getTextura()->getTarget().x;
+            int yise = inimigos[i]->getTextura()->getTarget().y;
+            int xiid = inimigos[i]->getTextura()->getTarget().x+29;
+            int yiid = inimigos[i]->getTextura()->getTarget().y+29;
+
+
+            if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
+                if (inimigos[i]->getLife() >= 0) {
+                    if (inimigos[k]->getPower() == true && inimigos[i]->getPower() == false) {
+                        inimigos[i]->setLife(inimigos[i]->getLife()-1);
+                        inimigos[k]->setScore(inimigos[k]->getScore()+(100*(i+1)));
+                        if(inimigos[i]->getLife() >= 0) {
+                            setInitialPosition(inimigos[i], cenarioJogo);
+                        }
+                        else {
+                            inimigos.erase(inimigos.begin()+i);
+                        }
+                    }
+                    else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
+                        inimigos[k]->setLife(inimigos[k]->getLife()-1);
+                        inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
+                        if(inimigos[k]->getLife() >= 0) {
+                            setInitialPosition(inimigos[k], cenarioJogo);
+                        }
+                        else {
+                            inimigos.erase(inimigos.begin()+i);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Teclado> teclado, std::shared_ptr<int> x, std::shared_ptr<int> y, std::shared_ptr<int> cont, std::shared_ptr<View> view, std::shared_ptr<Timer> timer, std::shared_ptr<Timer> powerTimer) { 
     int newX = 0;
     int newY = 0;
+
+    if (powerTimer->elapsedSeconds() > 10) {
+        if (personagem->getPower() == true) personagem->setPower();
+        powerTimer->stop();
+    }
     
     teclado->updateState();
     if ((teclado->getState())[SDL_SCANCODE_UP]) {
@@ -144,10 +227,15 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
             if (bolinhas[i]->getDisplay() == true) {
                 bolinhas[i]->setDisplay(false);
                 personagem->setScore(personagem->getScore()+bolinhas[i]->getScore());
+                bolinhas[i]->setOldDisplay(false);
                 if (bolinhas[i]->getPower() == true && personagem->getPower() == false) {
                     personagem->setPower();
+                    timer->start();
+                    powerTimer->start();
                 }
-                if (bolinhas[i]->getPower() == false) (*cont)++;
+                if (bolinhas[i]->getPower() == false) {
+                    (*cont)++;
+                }
             }
         }
     }
@@ -170,8 +258,10 @@ int Jogo::localCharacterControl(std::shared_ptr<Personagem> personagem, std::vec
             }
         }
     }
-    std::cout << "Score: "<< personagem->getScore() <<" ----------------- Extra Life: "<< personagem->getLife() <<"/2 ----------------- Power: " << personagem->getPower() << "\n" <<std::endl;
-    if ((*cont) == bolinhas.size()-4) return 2;
+    std::cout << "Score: "<< personagem->getScore() <<" ----------------- Extra Life: "<< personagem->getLife() <<"/2 ----------------- Power: " << personagem->getPower();
+    if (personagem->getPower()) std::cout << " ----------------- Power Time Left: " << 10-powerTimer->elapsedSeconds();
+    std::cout << std::endl;
+    if ((*cont) == bolinhas.size()) return 2;
     return 0;
 }
 
@@ -193,7 +283,7 @@ void Jogo::localNpcControl(std::shared_ptr<Personagem> personagem, std::shared_p
             newX = 2;
             newY = 0;
         }
-        else if (random1 == 1 && random2 == 0 && (cenarioJogo->getMap()[ty-1][tx] == 2 || cenarioJogo->getMap()[ty+30][tx] == 2 || cenarioJogo->getMap()[ty][tx] != 5)) {
+        else if (random1 == 1 && random2 == 0 && ((cenarioJogo->getMap()[ty-1][tx] == 2 && cenarioJogo->getMap()[ty][tx] == 5) || cenarioJogo->getMap()[ty][tx] != 5)) {
             newX = 0;
             newY = -2;
         }
@@ -209,28 +299,217 @@ void Jogo::localNpcControl(std::shared_ptr<Personagem> personagem, std::shared_p
     }
 }
 
-void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Personagem> personagem, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, int multi) {
-    int state = 0;
+void Jogo::carregarJogo(std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<int> cont) {
+    std::ifstream arquivo;
+    std::stringstream s;
+    arquivo.open("save.txt");
+    if (arquivo.is_open() ) {
+        s << arquivo.rdbuf();
+        auto j3 = json::parse(s.str());
+        
+        personagens[0]->setLife(j3["personagem"]["life"].get<int>());
+        personagens[0]->setScore(j3["personagem"]["score"].get<int>());
+        personagens[0]->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
 
-    SDL_Event event;
+        std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
+        for (int i = 0; i < inimigos.size(); i++) {
+            inimigos[i]->setLife(in[i]["life"].get<int>());
+            inimigos[i]->getTextura()->setTarget(in[i]["x"].get<int>(), in[i]["y"].get<int>());
+        }
 
-    setBallsPositions(cenarioJogo, bolinhas);
+        std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+        for (int i = 0; i < bolinhas.size(); i++) {
+            bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+            bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+            bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+        }
+        arquivo.close();
+    }
+}
 
-    setInitialPosition(personagem, cenarioJogo);
+void Jogo::criarCenario(std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<View> view) {
+
+    int mapa1[21][25] =
+        {
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 1
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 2
+            {1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1}, // 3
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 4
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 5
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 6
+            {1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1}, // 7
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 8
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 2, 2, 2, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 9
+            {1, 3, 3, 3, 3, 3, 3, 3, 1, 5, 5, 5, 5, 5, 5, 5, 1, 3, 3, 3, 3, 3, 3, 3, 1}, // 10
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 11
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 4, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 12
+            {1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1}, // 13
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 14
+            {1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1}, // 15
+            {1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1}, // 16
+            {1, 1, 1, 3, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 3, 1, 1, 1}, // 17
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 18
+            {1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1}, // 19
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 20
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 21
+        };
+
+    int **mapa = (int**)malloc(21*sizeof(int*));
+    for (int i = 0; i < 21; i++) {
+        mapa[i] = (int*)malloc(25*sizeof(int));
+        for (int j = 0; j < 25; j++) {
+            mapa[i][j] = mapa1[i][j];
+        }
+    }
+
+    char const *img2 = "./assets/mapinha.jpg";
+    std::shared_ptr<CenarioJogo> novoCenarioJogo (new CenarioJogo(mapa));
+    std::shared_ptr<Textura> textura2 (new Textura(view->getRenderer(), img2, 0, 0)); // textura 2 (fundo)
+    novoCenarioJogo->setTextura(textura2);
+    cenarioJogo.push_back(novoCenarioJogo);
+}
+
+
+void Jogo::criarBolinhas(std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<View> view) {
+
+    int mapa1[21][25] =
+        {
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // 1
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 2
+            {1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1}, // 3
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 4
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 5
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 6
+            {1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1}, // 7
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 8
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 2, 2, 2, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 9
+            {1, 3, 3, 3, 3, 3, 3, 3, 1, 5, 5, 5, 5, 5, 5, 5, 1, 3, 3, 3, 3, 3, 3, 3, 1}, // 10
+            {1, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 3, 1}, // 11
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 4, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 12
+            {1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1}, // 13
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 14
+            {1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1}, // 15
+            {1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 1}, // 16
+            {1, 1, 1, 3, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 3, 1, 1, 1}, // 17
+            {1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 1}, // 18
+            {1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1}, // 19
+            {1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1}, // 20
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // 21
+        };
+
+
+    int **ball = (int**)malloc(sizeof(int*));
+    ball[0] = (int*)malloc(sizeof(int));
+    ball[0][0] = 6;
+    char const* ball_name = "./assets/bolinha.jpg";
+    char const* ball_name1 = "./assets/bolao.jpg";
+    int **mapa = (int**)malloc(21*sizeof(int*));
+    for (int i = 0; i < 21; i++) {
+        mapa[i] = (int*)malloc(25*sizeof(int));
+        for (int j = 0; j < 25; j++) {
+            mapa[i][j] = mapa1[i][j];
+            if (mapa[i][j] == 3) {
+                std::shared_ptr<Bolinha> bolinha (new Bolinha(ball, false, 6, ball_name));
+                std::shared_ptr<Textura> texturaB (new Textura(view->getRenderer(), ball_name, 0, 0));
+                bolinha->setTextura(texturaB);
+                bolinhas.push_back(bolinha);
+            }
+            else if (mapa[i][j] == 6) {
+                std::shared_ptr<Bolinha> bolinha (new Bolinha(ball, true, 6, ball_name1));
+                std::shared_ptr<Textura> texturaB (new Textura(view->getRenderer(), ball_name1, 0, 0));
+                bolinha->setTextura(texturaB);
+                bolinhas.push_back(bolinha);
+            }
+        }
+    }
+
+}
+
+void Jogo::criarInimigos(std::vector<std::shared_ptr<Personagem>> &inimigos, int quantidade, std::shared_ptr<View> view) {
+
+    int pacman[10][10] = {
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+    };
+
+    int **npc1 = (int**)malloc(sizeof(int*)*10);
+    for (int i = 0; i < 10; i++) {
+        npc1[i] = (int*)malloc(sizeof(int)*10);
+        for (int j = 0; j < 10; j++) {
+            npc1[i][j] = pacman[i][j];
+        }
+    }
+
+    char buffer2[100] = ".jpg";
+    for (int i = 0; i < quantidade; i++) {
+        char buffer[100] = "./assets/npc";
+        std::string num = std::to_string(i);
+        strcat(buffer, num.c_str());
+        strcat(buffer, buffer2);
+        std::string name = "local";
+        std::shared_ptr<Personagem> inimigo (new Personagem(npc1, true, true, 30, 30, buffer, name));
+        std::shared_ptr<Textura> textura12 (new Textura(view->getRenderer(), buffer, 0, 0));
+        inimigo->setTextura(textura12);
+        inimigos.push_back(inimigo);
+    }
+
+}
+
+std::shared_ptr<Personagem> Jogo::criarPersonagem(std::vector<std::shared_ptr<Personagem>> &personagens,std::shared_ptr<View> view, std::string name) {
     
-    bool rodando = true;
+    int pacman2[10][10] = {
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+        {6, 6, 6, 6, 6, 6, 6, 6, 6, 6},
+    };
+    
+    char const *img1 = "./assets/pacman.jpg";
+    int **pacman = (int**)malloc(sizeof(int*)*10);
+    for (int i = 0; i < 10; i++) {
+        pacman[i] = (int*)malloc(sizeof(int)*10);
+        for (int j = 0; j < 10; j++) {
+            pacman[i][j] = pacman2[i][j];
+        }
+    }
+    std::shared_ptr<Personagem> personagem (new Personagem(pacman, false, false, 30, 30, img1, name));
+    std::shared_ptr<Textura> textura1 (new Textura(view->getRenderer(), img1, 0, 0)); // textura 1 (movel)
+    personagem->setTextura(textura1);
+    personagens.push_back(personagem);
+    return personagem;
+
+}
+
+
+void Jogo::iniciarJogo(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
+    SDL_Event event;
+    std::vector<std::shared_ptr<Personagem>> inimigos;
+    std::vector<std::shared_ptr<Personagem>> personagens;
+    std::vector<std::shared_ptr<Bolinha>> bolinhas;
+    std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
+
+
+    criarBolinhas(bolinhas, view);
+    criarInimigos(inimigos, 5, view);
+    criarCenario(cenarioJogo, view);
 
     char const *img3 = "./assets/pacwpp.jpg";
 
-    std::shared_ptr<Textura> textura3 (new Textura(view->getRenderer(), img3, 0, 0)); // textura 2 (fundo)
-
-    char const *img4 = "./assets/pacwpp2.jpg";
-
-    std::shared_ptr<Textura> textura4 (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
-
-    char const *img5 = "./assets/pacwpp3.jpg";
-
-    std::shared_ptr<Textura> textura5 (new Textura(view->getRenderer(), img5, 0, 0)); // textura 2 (fundo)
+    std::shared_ptr<Textura> menuInicial (new Textura(view->getRenderer(), img3, 0, 0)); // textura 2 (fundo)
 
     std::shared_ptr<int> cont (new int);
     (*cont) = 0;
@@ -246,310 +525,211 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
     for (int i = 0; i < inimigos.size(); i++) {
         ix[i] = 0;
         iy[i] = 0;
-        setInitialPosition(inimigos[i], cenarioJogo);
-    }
-    while(rodando) {
-        if (state == 0) {
-            teclado->updateState();
-            if ((teclado->getState())[SDL_SCANCODE_RETURN]) {
-                state = 1;
-                rodando = false;
-            }
-            else if ((teclado->getState())[SDL_SCANCODE_SPACE]) {
-
-                std::ifstream arquivo;
-                std::stringstream s;
-                arquivo.open("save.txt");
-                if (arquivo.is_open() ) {
-                    s << arquivo.rdbuf();
-                    auto j3 = json::parse(s.str());
-                    
-                    personagem->setLife(j3["personagem"]["life"].get<int>());
-                    personagem->setScore(j3["personagem"]["score"].get<int>());
-                    if (j3["personagem"]["power"].get<bool>() == 1) personagem->setPower();
-                    personagem->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
-
-                    std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
-                    for (int i = 0; i < inimigos.size(); i++) {
-                        inimigos[i]->setLife(in[i]["life"].get<int>());
-                        inimigos[i]->getTextura()->setTarget(in[i]["x"].get<int>(), in[i]["y"].get<int>());
-                    }
-
-                    std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
-                    for (int i = 0; i < bolinhas.size(); i++) {
-                        bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
-                        if (pt[i]["display"].get<bool>() == false && pt[i]["power"].get<bool>() == false) {
-                            (*cont)++;
-                        }
-                        bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
-                        bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
-                    }
-                    
-                    arquivo.close();
-                }
-                state = 1;
-                rodando = false;
-            }
-            else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
-                state = 4;
-                rodando = false;
-            }
-            else if ((teclado->getState())[SDL_SCANCODE_ESCAPE]) {
-                state = 5;
-                rodando = false;
-            }
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    rodando = false;
-                }
-            }
-            view->renderClear();
-            view->renderMain(textura3);
-            view->renderPresent();
-            SDL_Delay(10);
-
-        }
-    }
-    rodando = true;
-    if (state == 1) {
-        while (rodando) {
-            int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-            if (res == 2) {
-                state = 2;
-                rodando = false;    
-            }
-            if(personagem->getLife() >= 0 && res == 1) {
-                personagem->setLife(personagem->getLife()-1);
-                if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
-                else {
-                    if (multi == 0) {
-                        state = 3; 
-                        rodando = false;
-                    }
-                }
-            }
-            for (int i = 0; i < inimigos.size(); i++) {
-                localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
-            }
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    json j;
-                    json ps;   
-
-                    //save main character
-                    ps["x"] = personagem->getTextura()->getTarget().x;
-                    ps["y"] = personagem->getTextura()->getTarget().y;
-                    ps["score"] = personagem->getScore();
-                    ps["life"] = personagem->getLife();
-                    ps["power"] = personagem->getPower();
-
-
-                    std::vector<json> enemies;
-                    //save enemies
-                    for (int i = 0; i < inimigos.size(); i++) {
-                        json en;
-                        en["x"] = inimigos[i]->getTextura()->getTarget().x;
-                        en["y"] = inimigos[i]->getTextura()->getTarget().y;
-                        en["life"] = inimigos[i]->getLife();
-                        enemies.push_back(en);
-                    }
-
-                    std::vector<json> points;
-                    //save points
-                    for (int i = 0; i < bolinhas.size(); i++) {
-                        json pts;
-                        pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
-                        pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
-                        pts["display"] = bolinhas[i]->getDisplay();
-                        pts["score"] = bolinhas[i]->getScore();
-                        pts["power"] = bolinhas[i]->getPower();
-                        points.push_back(pts);
-                    }
-
-                    std::ofstream arquivo1;
-                    arquivo1.open("save.txt");
-
-                    j["personagem"] = ps;
-                    j["inimigos"] = enemies;
-                    j["bolinhas"] = points;
-                    arquivo1 << j << std::endl;
-                    arquivo1.close();
-                    rodando = false;
-                }
-            }
-            view->renderClear();
-            view->renderBackground(cenarioJogo->getTextura());
-            for (int i = 0; i < bolinhas.size(); i++) {
-                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-            }
-            for (int i = 0; i < inimigos.size(); i++) {
-                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
-            }
-            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
-            view->renderPresent();
-
-            //save
-            SDL_Delay(10);
-        }
-        rodando = true;
-        if (state == 2) {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura5);
-                view->renderPresent();
-                SDL_Delay(10);
-            }
-        }
-        if (state == 3) {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura4);
-                view->renderPresent();
-                SDL_Delay(10);
-            }
-        }
+        setInitialPosition(inimigos[i], cenarioJogo[0]);
     }
 
-    if (state == 4) {
-        std::cout << "SERVER SIDE" << std::endl;
-        boost::asio::io_service my_io_service; // Conecta com o SO
+    setBallsPositions(cenarioJogo[0], bolinhas);
 
-        udp::endpoint local_endpoint(udp::v4(), 9001); // endpoint: contem
-                                                        // conf. da conexao (ip/port)
+    bool single = true;
 
-        udp::socket my_socket(my_io_service,   // io service
-                                local_endpoint); // endpoint
+    bool rodando = true;
 
-        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+    bool carregar = false;
 
-        char v[120];
-        my_socket.receive_from(boost::asio::buffer(v, 120), // Local do buffer
-                        remote_endpoint);            // Confs. do Cliente
-        while (rodando) {
+    bool jogar = false;
 
-            int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont);
-            if (res == 2) {
-                state = 2;
-                std::string s = "win";
-                my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+    while (rodando) {
+
+        teclado->updateState();
+        if ((teclado->getState())[SDL_SCANCODE_RETURN]) {
+            rodando = false;
+            jogar = true;
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_SPACE]) {
+            carregar = true;
+            rodando = false;
+            jogar = true;
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_TAB]) {
+            conectarServidor(view, teclado);
+        }
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
                 rodando = false;
             }
-            if(personagem->getLife() >= 0 && res == 1) {
-                personagem->setLife(personagem->getLife()-1);
-                if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
-                else {
-                    if (multi == 0) {
-                        state = 3; 
-                        std::string s = "game_over";
-                        my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-                        rodando = false;
-                    }
-                }
-            }
-            for (int i = 0; i < inimigos.size(); i++) {
-                localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
-            }
-
-            json j;
-            json ps;   
-
-            //save main character
-            ps["x"] = personagem->getTextura()->getTarget().x;
-            ps["y"] = personagem->getTextura()->getTarget().y;
-            ps["score"] = personagem->getScore();
-            ps["life"] = personagem->getLife();
-            ps["power"] = personagem->getPower();
-
-
-            std::vector<json> enemies;
-            //save enemies
-            for (int i = 0; i < inimigos.size(); i++) {
-                json en;
-                en["x"] = inimigos[i]->getTextura()->getTarget().x;
-                en["y"] = inimigos[i]->getTextura()->getTarget().y;
-                en["life"] = inimigos[i]->getLife();
-                enemies.push_back(en);
-            }
-
-            std::vector<json> points;
-            //save points
-            for (int i = 0; i < bolinhas.size(); i++) {
-                json pts;
-                pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
-                pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
-                pts["display"] = bolinhas[i]->getDisplay();
-                pts["score"] = bolinhas[i]->getScore();
-                pts["power"] = bolinhas[i]->getPower();
-                points.push_back(pts);
-            }
-
-            j["personagem"] = ps;
-            j["inimigos"] = enemies;
-            j["bolinhas"] = points;
-            
-            std::string s = j.dump();
-            my_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    rodando = false;
-                }
-            }
-            view->renderClear();
-            view->renderBackground(cenarioJogo->getTextura());
-            for (int i = 0; i < bolinhas.size(); i++) {
-                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-            }
-            for (int i = 0; i < inimigos.size(); i++) {
-                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
-            }
-            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
-            view->renderPresent();
-
-            //save
-            SDL_Delay(10);
         }
-        rodando = true;
-        if (state == 2) {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura5);
-                view->renderPresent();
-                SDL_Delay(10);
-            }
-        }
-        if (state == 3) {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura4);
-                view->renderPresent();
-                SDL_Delay(10);
-            }
-        }
+        view->renderClear();
+        view->renderMain(menuInicial);
+        view->renderPresent();
+        SDL_Delay(10);
     }
 
-    if (state == 5) {
-        std::cout << "CLIENT SIDE" << std::endl;
+    if (single && jogar) {
+        std::string name;
+        criarPersonagem(personagens, view, name);
+        setInitialPosition(personagens[0], cenarioJogo[0]);
+        if (carregar) carregarJogo(bolinhas, inimigos, personagens, cont);
+        int randomBall = rand() % (bolinhas.size()-1);
+        if (randomBall < 0) randomBall = 0;
+        else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
+        darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, cont);
+        jogarSingle(view, teclado, bolinhas, inimigos, cenarioJogo[0], personagens[0], x, y, cont, ix, iy);
+    }
+
+}
+
+
+void Jogo::jogarSingle(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<Personagem>> &inimigos, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Personagem> personagem, std::shared_ptr<int> x, std::shared_ptr<int> y, std::shared_ptr<int> cont, int * ix, int * iy) {
+    SDL_Event event;
+    std::shared_ptr<Timer> timer (new Timer());
+    std::shared_ptr<Timer> powerTimer (new Timer());
+    char const *img4 = "./assets/pacwpp2.jpg";
+
+    std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
+
+    char const *img5 = "./assets/pacwpp3.jpg";
+
+    std::shared_ptr<Textura> vitoria (new Textura(view->getRenderer(), img5, 0, 0)); // textura 2 (fundo)
+
+    int state = 2;
+
+    bool rodando = true;
+    while (rodando) {
+        // std::cout << "tempo: " << timer->elapsedSeconds() << std::endl;
+        if (timer->elapsedSeconds() > 10) {
+            int randomBall = rand() % (bolinhas.size()-1);
+            if (randomBall < 0) randomBall = 0;
+            else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
+            darPoderParaBolinha(bolinhas[randomBall], cenarioJogo, view, cont);
+            timer->stop();
+        }
+        int res = localCharacterControl(personagem, inimigos, bolinhas, cenarioJogo, teclado, x, y, cont, view, timer, powerTimer);
+        if (res == 2 || aindaTemBolinhas(bolinhas) == false) {
+            fimDeJogo(view, vitoria);
+            break; 
+        }
+        if(personagem->getLife() >= 0 && res == 1) {
+            personagem->setLife(personagem->getLife()-1);
+            if(personagem->getLife() >= 0) setInitialPosition(personagem, cenarioJogo);
+            else {
+                fimDeJogo(view, derrota);
+                break;
+            }
+        }
+        for (int i = 0; i < inimigos.size(); i++) {
+            localNpcControl(inimigos[i], cenarioJogo, ix, iy, i);
+        }
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                json j;
+                json ps;   
+
+                //save main character
+                ps["x"] = personagem->getTextura()->getTarget().x;
+                ps["y"] = personagem->getTextura()->getTarget().y;
+                ps["score"] = personagem->getScore();
+                ps["life"] = personagem->getLife();
+                ps["power"] = personagem->getPower();
+
+
+                std::vector<json> enemies;
+                //save enemies
+                for (int i = 0; i < inimigos.size(); i++) {
+                    json en;
+                    en["x"] = inimigos[i]->getTextura()->getTarget().x;
+                    en["y"] = inimigos[i]->getTextura()->getTarget().y;
+                    en["life"] = inimigos[i]->getLife();
+                    enemies.push_back(en);
+                }
+
+                std::vector<json> points;
+                //save points
+                for (int i = 0; i < bolinhas.size(); i++) {
+                    json pts;
+                    pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
+                    pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
+                    if (bolinhas[i]->getOldDisplay()) pts["display"] = bolinhas[i]->getDisplay();
+                    else pts["display"] = false;
+                    pts["score"] = bolinhas[i]->getScore();
+                    points.push_back(pts);
+                }
+
+                std::ofstream arquivo1;
+                arquivo1.open("save.txt");
+
+                j["personagem"] = ps;
+                j["inimigos"] = enemies;
+                j["bolinhas"] = points;
+                arquivo1 << j << std::endl;
+                arquivo1.close();
+                rodando = false;
+            }
+        }
+        view->renderClear();
+        view->renderBackground(cenarioJogo->getTextura());
+        for (int i = 0; i < bolinhas.size(); i++) {
+            if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+        }
+        for (int i = 0; i < inimigos.size(); i++) {
+            if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
+        }
+        if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
+        view->renderPresent();
+
+
+        //save
+        SDL_Delay(10);
+    }
+};
+
+void Jogo::darPoderParaBolinha(std::shared_ptr<Bolinha> bolinha, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<View> view, std::shared_ptr<int> cont) {
+    bolinha->setOldDisplay(bolinha->getDisplay());  
+    bolinha->setDisplay(true);
+    bolinha->setPower(true);
+    bolinha->setScore(50);
+    int x = bolinha->getTextura()->getTarget().x;
+    int y = bolinha->getTextura()->getTarget().y;
+    char const* ball_name1 = "./assets/bolao.jpg";
+    std::shared_ptr<Textura> texturaBolaComPoder (new Textura(view->getRenderer(), ball_name1, x, y));
+
+    std::cout << "x: " << x << "; y: " << y << std::endl;
+
+    int **mapa = cenarioJogo->getMap();
+    for (int i = 0; i < 30; i++) {
+        for (int j = 0; j < 30; j++) {
+            mapa[y+i][x+j] = 6;
+        }
+    }
+    cenarioJogo->setMap(mapa);
+    bolinha->setTextura(texturaBolaComPoder);
+}
+
+bool Jogo::aindaTemBolinhas(std::vector<std::shared_ptr<Bolinha>> &bolinhas) {
+    bool temBolinhas = false;
+    for (int i = 0; i < bolinhas.size(); i++) {
+        if (bolinhas[i]->getPower() == false && bolinhas[i]->getDisplay()) {
+            temBolinhas = true;
+            break;
+        }
+    }
+    return temBolinhas;
+}
+
+
+void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
+        char hostname[HOST_NAME_MAX];
+        char username[LOGIN_NAME_MAX];
+        gethostname(hostname, HOST_NAME_MAX);
+        getlogin_r(username, LOGIN_NAME_MAX);
+        json j;
+
+        std::stringstream ss;
+        ss << username << "@" << hostname;
+        std::string name = ss.str();
+
+        j["name"] = name;
+        j["request"] = "connect";
 
         boost::asio::io_service io_service;
 
@@ -562,97 +742,317 @@ void Jogo::iniciarJogo(std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr
 
         udp::endpoint remote_endpoint(ip_remoto, 9001);
 
-        std::string s = "local";
+        std::string s = j.dump();
         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-        char v[100000];
-        char buff[] = "win";
-        char buff2[] = "game_over";
-        int win = 1;
 
-        while (rodando) {
-            memset(v, 0, 100000);
-            meu_socket.receive_from(boost::asio::buffer(v, 100000), remote_endpoint);
-            if (strlen(v) < 9) {
+        char v[1000];
+        meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+                        remote_endpoint);
+        json j2 = json::parse(v);
+        std::string s1 = j2["response"];
+        std::string s2 = "success";
+        std::string s3 = "ip_already_connected";
+        if (s1.compare(s2) == 0) {
+            std::cout << "Connected Successfully" << std::endl;
+            jogarMulti(view, teclado, name);
+        }
+        else if (s1.compare(s3) == 0) {
+            std::cout << "IP already connected!" << std::endl;
+            return;
+        }
+}
+
+void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name) {
+    SDL_Event event;
+    std::vector<std::shared_ptr<Personagem>> personagens;
+    std::vector<std::shared_ptr<Bolinha>> bolinhas;
+    std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
+
+    boost::asio::io_service io_service;
+
+    udp::endpoint local_endpoint(udp::v4(), 0);
+    udp::socket meu_socket(io_service, local_endpoint);
+
+    // Encontrando IP remoto
+    boost::asio::ip::address ip_remoto =
+        boost::asio::ip::address::from_string("127.0.0.1");
+
+    udp::endpoint remote_endpoint1(ip_remoto, 9002);
+    udp::endpoint remote_endpoint2(ip_remoto, 9003);
+
+
+    criarBolinhas(bolinhas, view);
+    criarCenario(cenarioJogo, view);
+    int newX = 0;
+    int newY = 0;
+    bool rodando = true;
+    char v[1000000];
+    while (rodando) {
+        json j;
+
+        j["request"] = "play";
+
+        teclado->updateState();
+        if ((teclado->getState())[SDL_SCANCODE_UP]) {
+            newX = 0; 
+            newY = -2;
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
+            newX = 0; 
+            newY = 2;
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
+            newX = 2; 
+            newY = 0;
+        }
+        else if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
+            newX = -2; 
+            newY = 0;
+        }
+
+        j["vertical"] = newY;
+        j["horizontal"] = newX;
+        j["name"] = name;
+
+        std::string s = j.dump();
+        meu_socket.send_to(boost::asio::buffer(s), remote_endpoint1);
+
+        j["request"] = "data";
+        std::string s2 = j.dump();
+        meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint2);
+
+        memset(v, 0, 1000000);
+        meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
+                        remote_endpoint2);
+        json j3 = json::parse(v);
+        if (j3["active"].get<bool>() == false) {
+            rodando = false;
+            break;
+        }
+
+        std::vector<json> ch = j3["characters"].get<std::vector<json>>();
+        while (personagens.size() != ch.size()) {
+            criarPersonagem(personagens, view, name);
+        }
+        for (int i = 0; i < ch.size(); i++) {
+            personagens[i]->setLife(ch[i]["life"].get<int>());
+            personagens[i]->getTextura()->setTarget(ch[i]["x"].get<int>(), ch[i]["y"].get<int>());
+        }
+
+        std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+        for (int i = 0; i < bolinhas.size(); i++) {
+            bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+            bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+            bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+        }
+
+        view->renderClear();
+        view->renderBackground(cenarioJogo[0]->getTextura());
+        for (int i = 0; i < bolinhas.size(); i++) {
+            if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+        }
+        for (int i = 0; i < personagens.size(); i++) {
+            if (personagens[i]->getLife() >= 0) view->renderCharacter(personagens[i]->getTextura());
+        }
+        view->renderPresent();
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
                 rodando = false;
-                break;
-            }
-            else if (strlen(v) < 15) {
-                win = 0;
-                rodando = false;
-                break;
-            }
-            json j3 = json::parse(v);
-                    
-            personagem->setLife(j3["personagem"]["life"].get<int>());
-            personagem->setScore(j3["personagem"]["score"].get<int>());
-            if (j3["personagem"]["power"].get<bool>() == 1) personagem->setPower();
-            personagem->getTextura()->setTarget(j3["personagem"]["x"].get<int>(), j3["personagem"]["y"].get<int>());
-
-            std::vector<json> in = j3["inimigos"].get<std::vector<json>>();
-            for (int i = 0; i < inimigos.size(); i++) {
-                inimigos[i]->setLife(in[i]["life"].get<int>());
-                inimigos[i]->getTextura()->setTarget(in[i]["x"].get<int>(), in[i]["y"].get<int>());
-            }
-
-            std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
-            for (int i = 0; i < bolinhas.size(); i++) {
-                bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
-                if (pt[i]["display"].get<bool>() == false && pt[i]["power"].get<bool>() == false) {
-                    (*cont)++;
-                }
-                bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
-                bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
-            }
-
-            view->renderClear();
-            view->renderBackground(cenarioJogo->getTextura());
-            for (int i = 0; i < bolinhas.size(); i++) {
-                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-            }
-            for (int i = 0; i < inimigos.size(); i++) {
-                if (inimigos[i]->getLife() >= 0) view->renderCharacter(inimigos[i]->getTextura());
-            }
-            if (personagem->getLife() >= 0) view->renderCharacter(personagem->getTextura());
-            view->renderPresent();
-
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    rodando = false;
-                }
-            }
-
-            //save
-            SDL_Delay(10);
-        }
-
-        rodando = true;
-
-        if (win == 1) {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura5);
-                view->renderPresent();
-                SDL_Delay(10);
             }
         }
-        else {
-            while (rodando) {
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        rodando = false;
-                    }
-                }
-                view->renderClear();
-                view->renderMain(textura4);
-                view->renderPresent();
-                SDL_Delay(10);
-            }
-        }
+
+        //save
+        SDL_Delay(10);
 
     }
-};
+}
+
+void Jogo::fimDeJogo(std::shared_ptr<View> view, std::shared_ptr<Textura> tela) {
+    SDL_Event event;
+    bool rodando = true;
+    while (rodando) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                rodando = false;
+            }
+        }
+        view->renderClear();
+        view->renderMain(tela);
+        view->renderPresent();
+        SDL_Delay(10);
+    }
+}
+
+void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
+
+    auto inserirJogadores = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::shared_ptr<CenarioJogo> cenarioJogo) {
+        boost::asio::io_service my_io_service; // Conecta com o SO
+
+        udp::endpoint local_endpoint(udp::v4(), 9001); // endpoint: contem
+                                                        // conf. da conexao (ip/port)
+
+        udp::socket meu_socket(my_io_service,   // io service
+                                local_endpoint); // endpoint
+
+        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+        while(1) {
+
+            char v[1000];
+            meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+                            remote_endpoint);            // Confs. do Cliente
+            json j = json::parse(v);
+
+            std::string s1 = j["request"].get<std::string>();
+            std::string s2 = "connect";
+            if (s1.compare(s2) == 0) {
+                std::string name = j["name"].get<std::string>();
+                std::cout << "IP: " << remote_endpoint << " - connected successfully" << std::endl;
+                bool notConnected = true;
+                for (int i = 0; i < personagens.size(); i++) {
+                    if (name.compare(personagens[i]->getName()) != 0) {
+                        std::cout << "IP already connected!" << std::endl;
+                        notConnected = false;
+                        break;
+                    }
+                }
+                json j2;
+                if (notConnected) {
+                    std::shared_ptr<Personagem> personagem = criarPersonagem(personagens, view, name);
+                    setInitialPosition(personagem, cenarioJogo);
+                    std::cout << "character: " << name << " created successfully!" << std::endl;
+                    j2["response"] = "success";
+                    std::string s = j2.dump();
+                    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                }
+                else {
+                    j2["response"] = "ip_already_connected";
+                    std::string s = j2.dump();
+                    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                }
+            }
+        }
+    };
+
+    auto processarJogo = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
+        boost::asio::io_service my_io_service; // Conecta com o SO
+
+        udp::endpoint local_endpoint(udp::v4(), 9002); // endpoint: contem
+                                                        // conf. da conexao (ip/port)
+
+        udp::socket meu_socket(my_io_service,   // io service
+                                local_endpoint); // endpoint
+
+        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+
+        char v[1000];
+
+        while(1) {
+            memset(v, 0, 1000);
+            meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
+                            remote_endpoint);            // Confs. do Cliente
+            json j = json::parse(v);
+            std::string s1 = j["request"].get<std::string>();
+            std::string s2 = "play";
+            std::string name = j["name"].get<std::string>();
+            if (s1.compare(s2) != 0) continue;
+            if (timer->elapsedSeconds() > 10) {
+                int randomBall = rand() % (bolinhas.size()-1);
+                if (randomBall < 0) randomBall = 0;
+                else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
+                darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, 0);
+                timer->stop();
+            }
+            for (int i = 0; i < personagens.size(); i++) {
+                if (name.compare(personagens[i]->getName()) == 0) {
+                    characterControl(personagens[i], personagens, bolinhas, cenarioJogo[0], j["vertical"].get<int>(), j["horizontal"].get<int>(), timer);
+                    break;
+                }
+            }
+
+        }
+    };
+
+    auto enviarDados = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
+        boost::asio::io_service my_io_service; // Conecta com o SO
+
+        udp::endpoint local_endpoint(udp::v4(), 9003); // endpoint: contem
+                                                        // conf. da conexao (ip/port)
+
+        udp::socket meu_socket(my_io_service,   // io service
+                                local_endpoint); // endpoint
+
+        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+
+        char v[100000];
+        while(1) {
+            std::cout << "personagens: " << personagens.size() << std::endl;
+            allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
+            memset(v, 0, 100000);
+            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
+                            remote_endpoint);            // Confs. do Cliente
+            json j = json::parse(v);
+
+            std::string s1 = j["request"].get<std::string>();
+            std::string s2 = "data";
+            if (s1.compare(s2) == 0) {
+                json j2;
+
+                std::vector<json> characters;
+                //save characters
+                for (int i = 0; i < personagens.size(); i++) {
+                    json en;
+                    en["x"] = personagens[i]->getTextura()->getTarget().x;
+                    en["y"] = personagens[i]->getTextura()->getTarget().y;
+                    en["life"] = personagens[i]->getLife();
+                    characters.push_back(en);
+                }
+
+                std::vector<json> points;
+                //save points
+                for (int i = 0; i < bolinhas.size(); i++) {
+                    json pts;
+                    pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
+                    pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
+                    pts["display"] = bolinhas[i]->getDisplay();
+                    pts["score"] = bolinhas[i]->getScore();
+                    pts["power"] = bolinhas[i]->getPower();
+                    points.push_back(pts);
+                }
+
+                j2["characters"] = characters;
+                j2["bolinhas"] = points;
+                
+                for (int i = 0; i < personagens.size(); i++) {
+                    if (personagens[i]->getLife() < 0) j2["active"] = false;
+                    else j2["active"] = true;
+                    std::string s = j2.dump();
+                    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                }
+            }
+        }
+
+    };
+
+    std::vector<std::shared_ptr<Personagem>> personagens;
+    std::vector<std::shared_ptr<Bolinha>> bolinhas;
+    std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
+    std::shared_ptr<Timer> timer (new Timer());
+
+    criarBolinhas(bolinhas, view);
+    criarCenario(cenarioJogo, view);
+    setBallsPositions(cenarioJogo[0], bolinhas);
+
+    int randomBall = rand() % (bolinhas.size()-1);
+    if (randomBall < 0) randomBall = 0;
+    else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
+    darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, 0);
+
+    std::thread t1(inserirJogadores, std::ref(personagens), std::ref(view), std::ref(cenarioJogo[0]));
+    std::thread t2(processarJogo, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
+    std::thread t3(enviarDados, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
+    t1.join();
+    t2.join();
+    t3.join();
+    std::cout << "Fechando servidor" << std::endl;
+}

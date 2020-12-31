@@ -1,16 +1,26 @@
 #include <iostream>
 #include <memory>
+#include <string>
 #include "../textura/textura.hpp"
 #include "../../Controllers/imageprocessing/imageprocessing.hpp"
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include "../../Controllers/timer/timer.hpp"
 
+using boost::asio::ip::udp;
 class Personagem {
     private:
         std::shared_ptr<Textura> textura;
+        std::shared_ptr<Timer> powerTimer;
         bool power, ghost;
         int height, width, life;
         unsigned long int score;
+        std::string name;
+        int x;
+        int y;
+        bool playing;
     public:
-        Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path);
+        Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path, std::string name1);
         ~Personagem();
         void setTextura(std::shared_ptr<Textura> textura1);
         std::shared_ptr<Textura> getTextura();
@@ -25,4 +35,13 @@ class Personagem {
         int getLife();
         void setScore(unsigned long int score1);
         unsigned long int getScore();
+        void setName(std::string name1);
+        std::string getName();
+        std::shared_ptr<Timer> getPowerTimer();
+        void setX(int x1);
+        int getX();
+        void setY(int y1);
+        int getY();
+        void setPlaying(bool playing1);
+        bool getPlaying();
 };

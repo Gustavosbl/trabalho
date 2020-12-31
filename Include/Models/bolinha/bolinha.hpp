@@ -10,6 +10,7 @@ class Bolinha {
         int size;
         bool display;
         unsigned long int score;
+        bool oldDisplay;
     public:
         Bolinha(int** ball, bool power1, int size1, char const* path);
         ~Bolinha();
@@ -19,6 +20,8 @@ class Bolinha {
         bool getPower();
         void setDisplay(bool display1);
         bool getDisplay();
+        void setOldDisplay(bool oldDisplay1);
+        bool getOldDisplay();
         void setSize(int size1);
         int getSize();
         unsigned long int getScore();

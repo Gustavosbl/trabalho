@@ -6,6 +6,7 @@ Bolinha::Bolinha(int** ball, bool power1, int size1, char const* path)
     size = size1;
     score = 10;
     display = true;
+    oldDisplay = true;
     if (power1 == true) score = 50;
 
 
@@ -99,6 +100,12 @@ void Bolinha::setDisplay(bool display1)
 bool Bolinha::getDisplay()
 {
     return display;
+};
+void Bolinha::setOldDisplay(bool oldDisplay1){
+    oldDisplay = oldDisplay1;
+};
+bool Bolinha::getOldDisplay(){
+    return oldDisplay;
 };
 void Bolinha::setSize(int size1)
 {
