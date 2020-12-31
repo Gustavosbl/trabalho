@@ -781,6 +781,7 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
         std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
         rodando = true;
         fimDeJogo(view, derrota);
+        rodando = false;
     }
 }
 
@@ -914,7 +915,9 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
             }
         }
+        SDL_Delay(10);
     }
+
     return gameover;
 }
 
