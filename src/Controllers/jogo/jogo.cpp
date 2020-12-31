@@ -764,15 +764,18 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
     std::string s1 = j2["response"];
     std::string s2 = "success";
     std::string s3 = "ip_already_connected";
+    bool rodando = true;
     if (s1.compare(s2) == 0) {
         std::cout << "Connected Successfully" << std::endl;
         bool gameover = jogarMulti(view, teclado, name);
+        if (gameover) {
+            rodando = false;
+        }
     }
     else if (s1.compare(s3) == 0) {
         std::cout << "IP already connected!" << std::endl;
         return;
     }
-    bool rodando = true;
     while(rodando) {
         char const *img4 = "./assets/pacwpp2.jpg";
         std::shared_ptr<Textura> derrota (new Textura(view->getRenderer(), img4, 0, 0)); // textura 2 (fundo)
@@ -866,6 +869,9 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         if (j3["active"].get<bool>() == false) {
             rodando = false;
             gameover = true;
+            j["request"] = "remove";
+            std::string s = j.dump();
+            meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
             break;
         }
 
@@ -1075,7 +1081,6 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                         j2["active"] = active;
                         std::string s = j2.dump();
                         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-                        if (active == false) personagens.erase(personagens.begin()+i);
                     }
                 }
             }
