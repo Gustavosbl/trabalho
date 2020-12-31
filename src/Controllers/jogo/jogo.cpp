@@ -929,9 +929,9 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                                 local_endpoint); // endpoint
 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+        char v[1000];
         while(1) {
-
-            char v[1000];
+            memset(v, 0, 1000);
             meu_socket.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
@@ -943,7 +943,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 std::cout << "IP: " << remote_endpoint << " - connected successfully" << std::endl;
                 bool notConnected = true;
                 for (int i = 0; i < personagens.size(); i++) {
-                    if (name.compare(personagens[i]->getName()) != 0) {
+                    if (name.compare(personagens[i]->getName()) == 0) {
                         std::cout << "IP already connected!" << std::endl;
                         notConnected = false;
                         break;
@@ -1019,7 +1019,6 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
         char v[100000];
         while(1) {
-            std::cout << "personagens: " << personagens.size() << std::endl;
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
             memset(v, 0, 100000);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
