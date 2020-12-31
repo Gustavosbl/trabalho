@@ -761,8 +761,8 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
         std::string s = j.dump();
         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
 
-        char v[100000];
-        meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
+        char v[10000000];
+        meu_socket.receive_from(boost::asio::buffer(v, 10000000), // Local do buffer
                         remote_endpoint);
         json j2 = json::parse(v);
         std::string s1 = j2["response"];
@@ -819,7 +819,7 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     int newX = 0;
     int newY = 0;
     bool rodando = true;
-    char v[1000000];
+    char v[10000000];
     while (rodando) {
         json j;
 
@@ -854,8 +854,8 @@ void Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         std::string s2 = j.dump();
         meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint2);
 
-        memset(v, 0, 1000000);
-        meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
+        memset(v, 0, 10000000);
+        meu_socket.receive_from(boost::asio::buffer(v, 10000000), // Local do buffer
                         remote_endpoint2);
         json j3 = json::parse(v);
         if (j3["active"].get<bool>() == false) {
@@ -931,8 +931,8 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
         while(1) {
 
-            char v[100000];
-            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
+            char v[100000000];
+            meu_socket.receive_from(boost::asio::buffer(v, 10000000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
 
@@ -978,11 +978,11 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
 
-        char v[100000];
+        char v[10000000];
 
         while(1) {
-            memset(v, 0, 100000);
-            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
+            memset(v, 0, 10000000);
+            meu_socket.receive_from(boost::asio::buffer(v, 10000000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
             std::string s1 = j["request"].get<std::string>();
@@ -1017,12 +1017,12 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
         udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
 
-        char v[100000];
+        char v[10000000];
         while(1) {
             std::cout << "personagens: " << personagens.size() << std::endl;
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
-            memset(v, 0, 100000);
-            meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
+            memset(v, 0, 10000000);
+            meu_socket.receive_from(boost::asio::buffer(v, 10000000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
             json j = json::parse(v);
 
