@@ -1041,12 +1041,22 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             json j = json::parse(v);
 
             std::string name = j["name"].get<std::string>();
+            bool ativo = false;
             for (int i = 0; i < personagens.size(); i++) {
                 if (name.compare(personagens[i]->getName()) == 0) {
+                    ativo = true;
                     if (personagens[i]->getLife() < 0) {
                         personagens.erase(personagens.begin()+i);
+                        break;
                     }
                 }
+            }
+            if (ativo) {
+                json js;
+                js["active"] = false;
+                std::string s = js.dump();
+                meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                break;
             }
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
 
