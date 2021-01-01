@@ -1056,7 +1056,6 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 js["active"] = false;
                 std::string s = js.dump();
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
-                break;
             }
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
 
