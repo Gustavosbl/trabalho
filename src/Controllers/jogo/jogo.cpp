@@ -149,7 +149,7 @@ void Jogo::allCharactersControl(std::vector<std::shared_ptr<Personagem>> &inimig
             }
 
             for (int i = k+1; i < inimigos.size(); i++) {
-                if (inimigos[i]->getLife >= 0) {
+                if (inimigos[i]->getLife() >= 0) {
                     int xise = inimigos[i]->getTextura()->getTarget().x;
                     int yise = inimigos[i]->getTextura()->getTarget().y;
                     int xiid = inimigos[i]->getTextura()->getTarget().x+29;
