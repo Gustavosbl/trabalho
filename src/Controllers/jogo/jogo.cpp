@@ -995,9 +995,9 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 bool notConnected = true;
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
+                        notConnected = false;
                         if (personagens[i]->getLife() >= 0) {
                             std::cout << "IP already connected!" << std::endl;
-                            notConnected = false;
                             break;
                         }
                         else {
