@@ -1136,7 +1136,10 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 std::string name = j["name"].get<std::string>();
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
-                        j2["active"] = true;
+                        bool active = true;
+                        if (personagens[i]->getLife() < 0) active = false;
+                        j2["active"] = active;
+                        j2["dead"] = true;
                         std::string s = j2.dump();
                         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
                     }
