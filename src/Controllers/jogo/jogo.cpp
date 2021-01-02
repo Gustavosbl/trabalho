@@ -124,50 +124,54 @@ void Jogo::characterControl(std::shared_ptr<Personagem> personagem, std::vector<
 
 void Jogo::allCharactersControl(std::vector<std::shared_ptr<Personagem>> &inimigos, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::shared_ptr<CenarioJogo> cenarioJogo, std::shared_ptr<Timer> timer) {
     for (int k = 0; k < inimigos.size(); k++) {
-        int xpse = inimigos[k]->getTextura()->getTarget().x;
-        int ypse = inimigos[k]->getTextura()->getTarget().y;
-        int xpid = inimigos[k]->getTextura()->getTarget().x+29;
-        int ypid = inimigos[k]->getTextura()->getTarget().y+29;
-        for (int i = 0; i < bolinhas.size(); i++) {
-            int xbse = bolinhas[i]->getTextura()->getTarget().x;
-            int ybse = bolinhas[i]->getTextura()->getTarget().y;
-            int xbid = bolinhas[i]->getTextura()->getTarget().x+29;
-            int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
-            if ((xbse == xpse && ((ypse <= ybid-10 && ypse >= ybse+10) || (ypid <= ybid-10 && ypid >= ybse+10))) || (ybse == ypse && ((xpse <= xbid-10 && xpse >= xbse+10) || (xpid <= xbid-10 && xpid >= xbse+10)))) {
-                if (bolinhas[i]->getDisplay() == true) {
-                    bolinhas[i]->setDisplay(false);
-                    inimigos[k]->setScore(inimigos[k]->getScore()+bolinhas[i]->getScore());
-                    bolinhas[i]->setOldDisplay(false);
-                    if (bolinhas[i]->getPower() == true && inimigos[k]->getPower() == false) {
-                        inimigos[k]->setPower();
-                        timer->start();
-                        inimigos[k]->getPowerTimer()->start();
+        if (inimigos[k]->getLife() >= 0) {
+            int xpse = inimigos[k]->getTextura()->getTarget().x;
+            int ypse = inimigos[k]->getTextura()->getTarget().y;
+            int xpid = inimigos[k]->getTextura()->getTarget().x+29;
+            int ypid = inimigos[k]->getTextura()->getTarget().y+29;
+            for (int i = 0; i < bolinhas.size(); i++) {
+                int xbse = bolinhas[i]->getTextura()->getTarget().x;
+                int ybse = bolinhas[i]->getTextura()->getTarget().y;
+                int xbid = bolinhas[i]->getTextura()->getTarget().x+29;
+                int ybid = bolinhas[i]->getTextura()->getTarget().y+29;
+                if ((xbse == xpse && ((ypse <= ybid-10 && ypse >= ybse+10) || (ypid <= ybid-10 && ypid >= ybse+10))) || (ybse == ypse && ((xpse <= xbid-10 && xpse >= xbse+10) || (xpid <= xbid-10 && xpid >= xbse+10)))) {
+                    if (bolinhas[i]->getDisplay() == true) {
+                        bolinhas[i]->setDisplay(false);
+                        inimigos[k]->setScore(inimigos[k]->getScore()+bolinhas[i]->getScore());
+                        bolinhas[i]->setOldDisplay(false);
+                        if (bolinhas[i]->getPower() == true && inimigos[k]->getPower() == false) {
+                            inimigos[k]->setPower();
+                            timer->start();
+                            inimigos[k]->getPowerTimer()->start();
+                        }
                     }
                 }
             }
-        }
 
-        for (int i = k+1; i < inimigos.size(); i++) {
-            int xise = inimigos[i]->getTextura()->getTarget().x;
-            int yise = inimigos[i]->getTextura()->getTarget().y;
-            int xiid = inimigos[i]->getTextura()->getTarget().x+29;
-            int yiid = inimigos[i]->getTextura()->getTarget().y+29;
+            for (int i = k+1; i < inimigos.size(); i++) {
+                if (inimigos[i]->getLife >= 0) {
+                    int xise = inimigos[i]->getTextura()->getTarget().x;
+                    int yise = inimigos[i]->getTextura()->getTarget().y;
+                    int xiid = inimigos[i]->getTextura()->getTarget().x+29;
+                    int yiid = inimigos[i]->getTextura()->getTarget().y+29;
 
 
-            if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
-                if (inimigos[i]->getLife() >= 0) {
-                    if (inimigos[k]->getPower() == true && inimigos[i]->getPower() == false) {
-                        inimigos[i]->setLife(inimigos[i]->getLife()-1);
-                        inimigos[k]->setScore(inimigos[k]->getScore()+(100*(i+1)));
-                        if(inimigos[i]->getLife() >= 0) {
-                            setInitialPosition(inimigos[i], cenarioJogo);
-                        }
-                    }
-                    else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
-                        inimigos[k]->setLife(inimigos[k]->getLife()-1);
-                        inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
-                        if(inimigos[k]->getLife() >= 0) {
-                            setInitialPosition(inimigos[k], cenarioJogo);
+                    if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
+                        if (inimigos[i]->getLife() >= 0) {
+                            if (inimigos[k]->getPower() == true && inimigos[i]->getPower() == false) {
+                                inimigos[i]->setLife(inimigos[i]->getLife()-1);
+                                inimigos[k]->setScore(inimigos[k]->getScore()+(100*(i+1)));
+                                if(inimigos[i]->getLife() >= 0) {
+                                    setInitialPosition(inimigos[i], cenarioJogo);
+                                }
+                            }
+                            else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
+                                inimigos[k]->setLife(inimigos[k]->getLife()-1);
+                                inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
+                                if(inimigos[k]->getLife() >= 0) {
+                                    setInitialPosition(inimigos[k], cenarioJogo);
+                                }
+                            }
                         }
                     }
                 }
@@ -1056,7 +1060,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             else if (s1.compare(s3) == 0) {
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
-                        personagens.erase(personagens.begin()+i);
+                        personagens[i]->setLife(-1);
                     }
                 }
             }
@@ -1162,6 +1166,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
 
         while(1) {
+            std::cout << "personagens: " << personagens.size() << std::endl;
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
         }
     };
