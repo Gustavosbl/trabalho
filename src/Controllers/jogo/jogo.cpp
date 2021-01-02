@@ -149,28 +149,26 @@ void Jogo::allCharactersControl(std::vector<std::shared_ptr<Personagem>> &inimig
             }
 
             for (int i = k+1; i < inimigos.size(); i++) {
-                if (inimigos[i]->getLife() >= 0) {
-                    int xise = inimigos[i]->getTextura()->getTarget().x;
-                    int yise = inimigos[i]->getTextura()->getTarget().y;
-                    int xiid = inimigos[i]->getTextura()->getTarget().x+29;
-                    int yiid = inimigos[i]->getTextura()->getTarget().y+29;
+                int xise = inimigos[i]->getTextura()->getTarget().x;
+                int yise = inimigos[i]->getTextura()->getTarget().y;
+                int xiid = inimigos[i]->getTextura()->getTarget().x+29;
+                int yiid = inimigos[i]->getTextura()->getTarget().y+29;
 
 
-                    if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
-                        if (inimigos[i]->getLife() >= 0) {
-                            if (inimigos[k]->getPower() == true && inimigos[i]->getPower() == false) {
-                                inimigos[i]->setLife(inimigos[i]->getLife()-1);
-                                inimigos[k]->setScore(inimigos[k]->getScore()+(100*(i+1)));
-                                if(inimigos[i]->getLife() >= 0) {
-                                    setInitialPosition(inimigos[i], cenarioJogo);
-                                }
+                if (((xpse <= xise && xpid >= xise) || (xpse <= xiid && xpid >= xiid)) && ((ypse <= yise && ypid >= yise) || (ypse <= yiid && ypid >= yiid))) {
+                    if (inimigos[i]->getLife() >= 0) {
+                        if (inimigos[k]->getPower() == true && inimigos[i]->getPower() == false) {
+                            inimigos[i]->setLife(inimigos[i]->getLife()-1);
+                            inimigos[k]->setScore(inimigos[k]->getScore()+(100*(i+1)));
+                            if(inimigos[i]->getLife() >= 0) {
+                                setInitialPosition(inimigos[i], cenarioJogo);
                             }
-                            else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
-                                inimigos[k]->setLife(inimigos[k]->getLife()-1);
-                                inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
-                                if(inimigos[k]->getLife() >= 0) {
-                                    setInitialPosition(inimigos[k], cenarioJogo);
-                                }
+                        }
+                        else if (inimigos[k]->getPower() == false && inimigos[i]->getPower() == true) {
+                            inimigos[k]->setLife(inimigos[k]->getLife()-1);
+                            inimigos[i]->setScore(inimigos[i]->getScore()+(100*(i+1)));
+                            if(inimigos[k]->getLife() >= 0) {
+                                setInitialPosition(inimigos[k], cenarioJogo);
                             }
                         }
                     }
@@ -809,7 +807,7 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     std::vector<std::shared_ptr<Bolinha>> bolinhas;
     std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
 
-    auto render = [this](std::shared_ptr<View> view, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name) {
+    auto render = [this](std::shared_ptr<View> view, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name, std::shared_ptr<bool> rodando) {
         boost::asio::io_service io_service;
 
         udp::endpoint local_endpoint(udp::v4(), 0);
@@ -821,11 +819,10 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
         udp::endpoint remote_endpoint1(ip_remoto, 9003);
 
-        bool rodando = true;
         char const* bolao = "./assets/bolao.jpg";
 
         char v[1000000];
-        while (rodando) {
+        while ((*rodando)) {
             json j;
 
             j["request"] = "data";
@@ -838,7 +835,7 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
                             remote_endpoint1);
             json j3 = json::parse(v);
             if (j3["active"].get<bool>() == false) {
-                rodando = false;
+                (*rodando) = false;
                 (*gameover) = j3["dead"].get<bool>();
                 break;
             }
@@ -877,7 +874,7 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
     };
 
-    auto control = [this](std::shared_ptr<Teclado> teclado, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name) {
+    auto control = [this](std::shared_ptr<Teclado> teclado, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name, std::shared_ptr<bool> rodando) {
         std::shared_ptr<Timer> controlTimer (new Timer());
         SDL_Event event;
         boost::asio::io_service io_service;
@@ -891,12 +888,11 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
         udp::endpoint remote_endpoint1(ip_remoto, 9002);
 
-        bool rodando = true;
         int newX = 0;
         int newY = 0;
         json j;
         controlTimer->start();
-        while(rodando) {
+        while((*rodando)) {
             if (controlTimer->elapsedSeconds() > 0.01) {
                 j["request"] = "play";
 
@@ -929,7 +925,7 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
             }
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
-                    rodando = false;
+                    (*rodando) = false;
                     j["request"] = "remove";
                     std::string s = j.dump();
                     meu_socket.send_to(boost::asio::buffer(s), remote_endpoint1);
@@ -943,11 +939,13 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     criarCenario(cenarioJogo, view);
     std::shared_ptr<bool> gameover (new bool);
     (*gameover) = false;
+        std::shared_ptr<bool> rodando (new bool);
+    (*rodando) = true;
 
     std::cout << (*config)["SERVER_IP"] << std::endl;
 
-    std::thread t1(render, view, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name);
-    std::thread t2(control, teclado, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name);
+    std::thread t1(render, view, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name, rodando);
+    std::thread t2(control, teclado, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name, rodando);
     t1.join();
     t2.join();
 
@@ -997,9 +995,15 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 bool notConnected = true;
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
-                        std::cout << "IP already connected!" << std::endl;
-                        notConnected = false;
-                        break;
+                        if (personagens[i]->getLife() >= 0) {
+                            std::cout << "IP already connected!" << std::endl;
+                            notConnected = false;
+                            break;
+                        }
+                        else {
+                            personagens[i]->setLife(2);
+                            setInitialPosition(personagens[i], cenarioJogo);
+                        }
                     }
                 }
                 json j2;
@@ -1061,6 +1065,8 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
                         personagens[i]->setLife(-1);
+                        personagens[i]->setScore(0);
+                        if (personagens[i]->getPower()) personagens[i]->setPower();
                     }
                 }
             }
@@ -1140,10 +1146,8 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 std::string name = j["name"].get<std::string>();
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
-                        bool active = true;
-                        if (personagens[i]->getLife() < 0) active = false;
-                        j2["active"] = active;
-                        j2["dead"] = true;
+                        j2["active"] = true;
+                        j2["dead"] = false;
                         std::string s = j2.dump();
                         meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
                     }
