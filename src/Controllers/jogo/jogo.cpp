@@ -786,135 +786,168 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
 
 bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name) {
 
-    json config;
+    std::shared_ptr<json> config (new json);
     std::ifstream file("config.txt");
     std::string str;
     size_t pos = 0;
     std::string delimiter = "=";
+    std::cout << "configuring" << std::endl;
     while (std::getline(file, str)) {
         pos = str.find(delimiter);
-        std::cout << pos << std::endl;
         std::string token = str.substr(0, pos);
-        std::cout << token << std::endl;
         str.erase(0, pos + delimiter.length());
         std::string token2 = str;
-        std::cout << token2 << std::endl;
-        config[token] = token2;
+        (*config)[token] = token2;
     }
-
-    SDL_Event event;
+    std::cout << "configured" << std::endl;
+    
     std::vector<std::shared_ptr<Personagem>> personagens;
     std::vector<std::shared_ptr<Bolinha>> bolinhas;
     std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
 
-    boost::asio::io_service io_service;
+    auto render = [this](std::shared_ptr<View> view, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name) {
+        boost::asio::io_service io_service;
 
-    udp::endpoint local_endpoint(udp::v4(), 0);
-    udp::socket meu_socket(io_service, local_endpoint);
+        udp::endpoint local_endpoint(udp::v4(), 0);
+        udp::socket meu_socket(io_service, local_endpoint);
 
-    // Encontrando IP remoto
-    boost::asio::ip::address ip_remoto =
-        boost::asio::ip::address::from_string(config["SERVER_IP"]);
+        // Encontrando IP remoto
+        boost::asio::ip::address ip_remoto =
+            boost::asio::ip::address::from_string((*config)["SERVER_IP"]);
 
-    udp::endpoint remote_endpoint1(ip_remoto, 9002);
-    udp::endpoint remote_endpoint2(ip_remoto, 9003);
+        udp::endpoint remote_endpoint1(ip_remoto, 9003);
 
+        bool rodando = true;
+        char const* bolao = "./assets/bolao.jpg";
 
-    char const* bolao = "./assets/bolao.jpg";
+        char v[1000000];
+        while (rodando) {
+            json j;
+
+            j["request"] = "data";
+            j["name"] = name;
+            std::string s2 = j.dump();
+            meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint1);
+
+            memset(v, 0, 1000000);
+            meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
+                            remote_endpoint1);
+            json j3 = json::parse(v);
+            if (j3["active"].get<bool>() == false) {
+                rodando = false;
+                (*gameover) = j3["dead"].get<bool>();
+                break;
+            }
+
+            std::vector<json> ch = j3["characters"].get<std::vector<json>>();
+            while (personagens.size() != ch.size()) {
+                criarPersonagem(personagens, view, name);
+            }
+            for (int i = 0; i < ch.size(); i++) {
+                personagens[i]->setLife(ch[i]["life"].get<int>());
+                personagens[i]->getTextura()->setTarget(ch[i]["x"].get<int>(), ch[i]["y"].get<int>());
+            }
+
+            std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+            for (int i = 0; i < bolinhas.size(); i++) {
+                bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+                bolinhas[i]->setPower(pt[i]["power"].get<bool>());
+                bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+                if (bolinhas[i]->getPower()) {
+                    std::shared_ptr<Textura> bolaPoder (new Textura(view->getRenderer(), bolao, pt[i]["x"].get<int>(), pt[i]["y"].get<int>()));
+                    bolinhas[i]->setTextura(bolaPoder);
+                }
+                else bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+            }
+
+            view->renderClear();
+            view->renderBackground(cenarioJogo[0]->getTextura());
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+            }
+            for (int i = 0; i < personagens.size(); i++) {
+                if (personagens[i]->getLife() >= 0) view->renderCharacter(personagens[i]->getTextura());
+            }
+            view->renderPresent();
+        }
+
+    };
+
+    auto control = [this](std::shared_ptr<Teclado> teclado, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name) {
+        std::shared_ptr<Timer> controlTimer (new Timer());
+        SDL_Event event;
+        boost::asio::io_service io_service;
+
+        udp::endpoint local_endpoint(udp::v4(), 0);
+        udp::socket meu_socket(io_service, local_endpoint);
+
+        // Encontrando IP remoto
+        boost::asio::ip::address ip_remoto =
+            boost::asio::ip::address::from_string((*config)["SERVER_IP"]);
+
+        udp::endpoint remote_endpoint1(ip_remoto, 9002);
+
+        bool rodando = true;
+        int newX = 0;
+        int newY = 0;
+        json j;
+        controlTimer->start();
+        while(rodando) {
+            if (controlTimer->elapsedSeconds() > 0.01) {
+                j["request"] = "play";
+
+                teclado->updateState();
+                if ((teclado->getState())[SDL_SCANCODE_UP]) {
+                    newX = 0; 
+                    newY = -2;
+                }
+                else if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
+                    newX = 0; 
+                    newY = 2;
+                }
+                else if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
+                    newX = 2; 
+                    newY = 0;
+                }
+                else if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
+                    newX = -2; 
+                    newY = 0;
+                }
+
+                j["vertical"] = newY;
+                j["horizontal"] = newX;
+                j["name"] = name;
+
+                std::string s = j.dump();
+                meu_socket.send_to(boost::asio::buffer(s), remote_endpoint1);
+                controlTimer->stop();
+                controlTimer->start();
+            }
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    rodando = false;
+                    j["request"] = "remove";
+                    std::string s = j.dump();
+                    meu_socket.send_to(boost::asio::buffer(s), remote_endpoint1);
+                }
+            }
+        }
+
+    };
+
     criarBolinhas(bolinhas, view);
     criarCenario(cenarioJogo, view);
-    int newX = 0;
-    int newY = 0;
-    bool rodando = true;
-    char v[1000000];
-    bool gameover = false;
-    while (rodando) {
-        json j;
+    std::shared_ptr<bool> gameover (new bool);
+    (*gameover) = false;
 
-        j["request"] = "play";
+    std::cout << (*config)["SERVER_IP"] << std::endl;
 
-        teclado->updateState();
-        if ((teclado->getState())[SDL_SCANCODE_UP]) {
-            newX = 0; 
-            newY = -2;
-        }
-        else if ((teclado->getState())[SDL_SCANCODE_DOWN]) {
-            newX = 0; 
-            newY = 2;
-        }
-        else if ((teclado->getState())[SDL_SCANCODE_RIGHT]) {
-            newX = 2; 
-            newY = 0;
-        }
-        else if ((teclado->getState())[SDL_SCANCODE_LEFT]) {
-            newX = -2; 
-            newY = 0;
-        }
+    std::thread t1(render, view, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name);
+    std::thread t2(control, teclado, std::ref(personagens), std::ref(bolinhas), std::ref(cenarioJogo), gameover, config, name);
+    t1.join();
+    t2.join();
 
-        j["vertical"] = newY;
-        j["horizontal"] = newX;
-        j["name"] = name;
-
-        std::string s = j.dump();
-        meu_socket.send_to(boost::asio::buffer(s), remote_endpoint1);
-
-        j["request"] = "data";
-        std::string s2 = j.dump();
-        meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint2);
-
-        memset(v, 0, 1000000);
-        meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
-                        remote_endpoint2);
-        json j3 = json::parse(v);
-        if (j3["active"].get<bool>() == false) {
-            rodando = false;
-            gameover = true;
-            break;
-        }
-
-        std::vector<json> ch = j3["characters"].get<std::vector<json>>();
-        while (personagens.size() != ch.size()) {
-            criarPersonagem(personagens, view, name);
-        }
-        for (int i = 0; i < ch.size(); i++) {
-            personagens[i]->setLife(ch[i]["life"].get<int>());
-            personagens[i]->getTextura()->setTarget(ch[i]["x"].get<int>(), ch[i]["y"].get<int>());
-        }
-
-        std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
-        for (int i = 0; i < bolinhas.size(); i++) {
-            bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
-            bolinhas[i]->setPower(pt[i]["power"].get<bool>());
-            bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
-            if (bolinhas[i]->getPower()) {
-                std::shared_ptr<Textura> bolaPoder (new Textura(view->getRenderer(), bolao, pt[i]["x"].get<int>(), pt[i]["y"].get<int>()));
-                bolinhas[i]->setTextura(bolaPoder);
-            }
-            else bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
-        }
-
-        view->renderClear();
-        view->renderBackground(cenarioJogo[0]->getTextura());
-        for (int i = 0; i < bolinhas.size(); i++) {
-            if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-        }
-        for (int i = 0; i < personagens.size(); i++) {
-            if (personagens[i]->getLife() >= 0) view->renderCharacter(personagens[i]->getTextura());
-        }
-        view->renderPresent();
-
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                rodando = false;
-                j["request"] = "remove";
-                std::string s = j.dump();
-                meu_socket.send_to(boost::asio::buffer(s), remote_endpoint2);
-            }
-        }
-        SDL_Delay(2);
-    }
-
-    return gameover;
+    return (*gameover);
 }
 
 void Jogo::fimDeJogo(std::shared_ptr<View> view, std::shared_ptr<Textura> tela) {
@@ -983,7 +1016,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
         }
     };
 
-    auto processarJogo = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
+    auto controlarPersonagem = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
         boost::asio::io_service my_io_service; // Conecta com o SO
 
         udp::endpoint local_endpoint(udp::v4(), 9002); // endpoint: contem
@@ -1004,21 +1037,29 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             std::string s1 = j["request"].get<std::string>();
             std::string s2 = "play";
             std::string name = j["name"].get<std::string>();
-            if (s1.compare(s2) != 0) continue;
-            if (timer->elapsedSeconds() > 10) {
-                int randomBall = rand() % (bolinhas.size()-1);
-                if (randomBall < 0) randomBall = 0;
-                else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
-                darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, 0);
-                timer->stop();
-            }
-            for (int i = 0; i < personagens.size(); i++) {
-                if (name.compare(personagens[i]->getName()) == 0) {
-                    characterControl(personagens[i], personagens, bolinhas, cenarioJogo[0], j["vertical"].get<int>(), j["horizontal"].get<int>(), timer);
-                    break;
+            std::string s3 = "remove";
+            if (s1.compare(s2) == 0) {
+                if (timer->elapsedSeconds() > 10) {
+                    int randomBall = rand() % (bolinhas.size()-1);
+                    if (randomBall < 0) randomBall = 0;
+                    else if (randomBall >= bolinhas.size()) randomBall = bolinhas.size() - 1;
+                    darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, 0);
+                    timer->stop();
+                }
+                for (int i = 0; i < personagens.size(); i++) {
+                    if (name.compare(personagens[i]->getName()) == 0) {
+                        characterControl(personagens[i], personagens, bolinhas, cenarioJogo[0], j["vertical"].get<int>(), j["horizontal"].get<int>(), timer);
+                        break;
+                    }
                 }
             }
-
+            else if (s1.compare(s3) == 0) {
+                for (int i = 0; i < personagens.size(); i++) {
+                    if (name.compare(personagens[i]->getName()) == 0) {
+                        personagens.erase(personagens.begin()+i);
+                    }
+                }
+            }
         }
     };
 
@@ -1042,12 +1083,13 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
             std::string name = j["name"].get<std::string>();
             bool ativo = false;
+            bool dead = false;
             for (int i = 0; i < personagens.size(); i++) {
                 if (name.compare(personagens[i]->getName()) == 0) {
                     ativo = true;
                     if (personagens[i]->getLife() < 0) {
                         ativo = false;
-                        personagens.erase(personagens.begin()+i);
+                        dead = true;
                         break;
                     }
                 }
@@ -1055,15 +1097,14 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             if (ativo == false) {
                 json js;
                 js["active"] = false;
+                js["dead"] = dead;
                 std::string s = js.dump();
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
                 continue;
             }
-            allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
 
             std::string s1 = j["request"].get<std::string>();
             std::string s2 = "data";
-            std::string s3 = "remove";
             if (s1.compare(s2) == 0) {
                 json j2;
 
@@ -1103,16 +1144,25 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                     }
                 }
             }
-            else if (s1.compare(s3) == 0) {
-                std::string name = j["name"].get<std::string>();
-                for (int i = 0; i < personagens.size(); i++) {
-                    if (name.compare(personagens[i]->getName()) == 0) {
-                        personagens.erase(personagens.begin()+i);
-                    }
-                }
-            }
         }
 
+    };
+
+    auto processarJogo = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
+        boost::asio::io_service my_io_service; // Conecta com o SO
+
+        udp::endpoint local_endpoint(udp::v4(), 9004); // endpoint: contem
+                                                        // conf. da conexao (ip/port)
+
+        udp::socket meu_socket(my_io_service,   // io service
+                                local_endpoint); // endpoint
+
+        udp::endpoint remote_endpoint; // vai conter informacoes de quem conectar
+
+
+        while(1) {
+            allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
+        }
     };
 
     std::vector<std::shared_ptr<Personagem>> personagens;
@@ -1130,10 +1180,12 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
     darPoderParaBolinha(bolinhas[randomBall], cenarioJogo[0], view, 0);
 
     std::thread t1(inserirJogadores, std::ref(personagens), std::ref(view), std::ref(cenarioJogo[0]));
-    std::thread t2(processarJogo, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
+    std::thread t2(controlarPersonagem, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
     std::thread t3(enviarDados, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
+    std::thread t4(processarJogo, std::ref(personagens), std::ref(view), std::ref(bolinhas), std::ref(cenarioJogo), std::ref(timer));
     t1.join();
     t2.join();
     t3.join();
+    t4.join();
     std::cout << "Fechando servidor" << std::endl;
 }
