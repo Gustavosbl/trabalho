@@ -993,6 +993,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 std::string name = j["name"].get<std::string>();
                 std::cout << "IP: " << remote_endpoint << " - connected successfully" << std::endl;
                 bool notConnected = true;
+                bool reconnect = false;
                 for (int i = 0; i < personagens.size(); i++) {
                     if (name.compare(personagens[i]->getName()) == 0) {
                         notConnected = false;
@@ -1003,14 +1004,17 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                         else {
                             personagens[i]->setLife(2);
                             setInitialPosition(personagens[i], cenarioJogo);
+                            reconnect = true;
                         }
                     }
                 }
                 json j2;
                 if (notConnected) {
-                    std::shared_ptr<Personagem> personagem = criarPersonagem(personagens, view, name);
-                    setInitialPosition(personagem, cenarioJogo);
-                    std::cout << "character: " << name << " created successfully!" << std::endl;
+                    if (reconnect == false) {
+                        std::shared_ptr<Personagem> personagem = criarPersonagem(personagens, view, name);
+                        setInitialPosition(personagem, cenarioJogo);
+                        std::cout << "character: " << name << " created successfully!" << std::endl;
+                    }
                     j2["response"] = "success";
                     std::string s = j2.dump();
                     meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
