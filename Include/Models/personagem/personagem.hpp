@@ -19,6 +19,7 @@ class Personagem {
         int x;
         int y;
         bool playing;
+        udp::endpoint remote_endpoint;
     public:
         Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path, std::string name1);
         ~Personagem();
@@ -44,4 +45,6 @@ class Personagem {
         int getY();
         void setPlaying(bool playing1);
         bool getPlaying();
+        void setIp(udp::endpoint remote_endpoint1);
+        udp::endpoint getIp();
 };

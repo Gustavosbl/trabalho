@@ -150,3 +150,9 @@ void Personagem::setPlaying(bool playing1) {
 bool Personagem::getPlaying() {
     return playing;
 }
+void Personagem::setIp(udp::endpoint remote_endpoint1) {
+    remote_endpoint = remote_endpoint1;
+}
+udp::endpoint Personagem::getIp() {
+    return remote_endpoint;
+}
