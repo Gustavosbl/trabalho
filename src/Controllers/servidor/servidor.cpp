@@ -383,7 +383,6 @@ bool Servidor::aindaTemBolinhas(std::vector<std::shared_ptr<Bolinha>> &bolinhas)
 void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado) {
 
     auto inserirJogadores = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::shared_ptr<CenarioJogo> cenarioJogo) {
-        static std::mutex foo;
         udp::endpoint local_remote_endpoint;
         char v[1000];
         while(1) {
@@ -391,7 +390,6 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
             meu_socket_receive.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
             local_remote_endpoint = remote_endpoint_receive;
-            foo.try_lock();
             json j = json::parse(v);
             
             std::string s1 = j["request"].get<std::string>();
@@ -434,7 +432,6 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                 std::cout << s << std::endl;
                 meu_socket_receive.send_to(boost::asio::buffer(s), local_remote_endpoint);
             }
-            foo.unlock();
         }
     };
 
@@ -482,62 +479,51 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
     };
 
     auto enviarDados = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
-        std::shared_ptr<Timer> renderTimer (new Timer());
         char v[100000];
-        renderTimer->start();
         while(1) {
-            if (renderTimer->elapsedSeconds() > 0.005) {
-                renderTimer->stop();
-                json j2;
-                j2["request"] = "render";
+            json j2;
+            j2["request"] = "render";
 
-                std::vector<json> characters;
-                //save characters
-                for (int i = 0; i < personagens.size(); i++) {
-                    if (personagens[i]->getFree() == false) continue;
-                    json en;
-                    en["x"] = personagens[i]->getTextura()->getTarget().x;
-                    en["y"] = personagens[i]->getTextura()->getTarget().y;
-                    en["life"] = personagens[i]->getLife();
-                    characters.push_back(en);
+            std::vector<json> characters;
+            //save characters
+            for (int i = 0; i < personagens.size(); i++) {
+                if (personagens[i]->getFree() == false) continue;
+                json en;
+                en["x"] = personagens[i]->getTextura()->getTarget().x;
+                en["y"] = personagens[i]->getTextura()->getTarget().y;
+                en["life"] = personagens[i]->getLife();
+                characters.push_back(en);
+            }
+
+            std::vector<json> points;
+            //save points
+            for (int i = 0; i < bolinhas.size(); i++) {
+                json pts;
+                pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
+                pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
+                pts["display"] = bolinhas[i]->getDisplay();
+                pts["score"] = bolinhas[i]->getScore();
+                pts["power"] = bolinhas[i]->getPower();
+                points.push_back(pts);
+            }
+
+            j2["characters"] = characters;
+            j2["bolinhas"] = points;
+            
+            j2["active"] = true;
+            j2["dead"] = false;
+
+            for (int p = 0; p < personagens.size(); p++) {
+                if (personagens[p]->getFree() == false) continue;
+
+                bool ativo = true;
+                bool dead = false;
+                if (personagens[p]->getLife() < 0) {
+                    j2["active"] = false;
+                    j2["dead"] = true;
                 }
-
-                std::vector<json> points;
-                //save points
-                for (int i = 0; i < bolinhas.size(); i++) {
-                    json pts;
-                    pts["x"] = bolinhas[i]->getTextura()->getTarget().x;
-                    pts["y"] = bolinhas[i]->getTextura()->getTarget().y;
-                    pts["display"] = bolinhas[i]->getDisplay();
-                    pts["score"] = bolinhas[i]->getScore();
-                    pts["power"] = bolinhas[i]->getPower();
-                    points.push_back(pts);
-                }
-
-                j2["characters"] = characters;
-                j2["bolinhas"] = points;
-                
-                j2["active"] = true;
-                j2["dead"] = false;
-
-                for (int p = 0; p < personagens.size(); p++) {
-                    if (personagens[p]->getFree() == false) continue;
-
-                    bool ativo = true;
-                    bool dead = false;
-                    if (personagens[p]->getLife() < 0) {
-                        ativo = false;
-                        dead = true;
-                        break;
-                    }
-                    if (ativo == false) {
-                        j2["active"] = false;
-                        j2["dead"] = dead;
-                    }
-                    std::string s = j2.dump();
-                    meu_socket_receive.send_to(boost::asio::buffer(s), personagens[p]->getIp());
-                }
-                renderTimer->start();
+                std::string s = j2.dump();
+                meu_socket_receive.send_to(boost::asio::buffer(s), personagens[p]->getIp());
             }
         }
 
