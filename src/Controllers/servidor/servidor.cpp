@@ -384,11 +384,13 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
 
     auto inserirJogadores = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::shared_ptr<CenarioJogo> cenarioJogo) {
         static std::mutex foo;
+        udp::endpoint local_remote_endpoint;
         char v[1000];
         while(1) {
             memset(v, 0, 1000);
             meu_socket_receive.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
+            local_remote_endpoint = remote_endpoint_receive;
             foo.try_lock();
             json j = json::parse(v);
             
@@ -396,7 +398,7 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
             std::string s2 = "connect";
             if (s1.compare(s2) == 0) {
                 std::string name = j["name"].get<std::string>();
-                std::cout << "IP: " << remote_endpoint_receive << " - connected successfully" << std::endl;
+                std::cout << "IP: " << local_remote_endpoint << " - connected successfully" << std::endl;
                 bool notConnected = true;
                 bool reconnect = false;
                 for (int i = 0; i < personagens.size(); i++) {
@@ -409,7 +411,7 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                         else {
                             personagens[i]->setLife(2);
                             setInitialPosition(personagens[i], cenarioJogo);
-                            personagens[i]->setIp(remote_endpoint_receive);
+                            personagens[i]->setIp(local_remote_endpoint);
                             reconnect = true;
                             personagens[i]->setFree(true);
                             break;
@@ -422,14 +424,15 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                     if (reconnect == false) {
                         std::shared_ptr<Personagem> personagem = criarPersonagem(personagens, view, name);
                         setInitialPosition(personagem, cenarioJogo);
-                        personagem->setIp(remote_endpoint_receive);
+                        personagem->setIp(local_remote_endpoint);
                         std::cout << "character: " << name << " created successfully!" << std::endl;
                         personagem->setFree(true);
                     }
                     j2["request"] = "success";
                 }
                 std::string s = j2.dump();
-                meu_socket_receive.send_to(boost::asio::buffer(s), remote_endpoint_receive);
+                std::cout << s << std::endl;
+                meu_socket_receive.send_to(boost::asio::buffer(s), local_remote_endpoint);
             }
             foo.unlock();
         }
@@ -438,11 +441,12 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
     auto controlarPersonagem = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
 
         char v[100000];
-
+        udp::endpoint local_remote_endpoint;
         while(1) {
             memset(v, 0, 100000);
             meu_socket_receive.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
+            local_remote_endpoint = remote_endpoint_receive;
             json j = json::parse(v);
             std::string s1 = j["request"].get<std::string>();
             std::string s2 = "play";
@@ -479,7 +483,6 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
 
     auto enviarDados = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
         std::shared_ptr<Timer> renderTimer (new Timer());
-
         char v[100000];
         renderTimer->start();
         while(1) {

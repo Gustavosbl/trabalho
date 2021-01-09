@@ -799,10 +799,12 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
         char v[1000000];
         json j;
+        udp::endpoint local_remote_endpoint;
         while ((*rodando)) {
             memset(v, 0, 1000000);
             meu_socket_send.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
                             remote_endpoint_send);
+            local_remote_endpoint = remote_endpoint_send;
             json j3 = json::parse(v);
             std::string s = "render";
             std::string s2 = j3["request"];
@@ -851,7 +853,6 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     auto control = [this](std::shared_ptr<Teclado> teclado, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::string name, std::shared_ptr<bool> rodando) {
         std::shared_ptr<Timer> controlTimer (new Timer());
         SDL_Event event;
-
         int newX = 0;
         int newY = 0;
         json j;
