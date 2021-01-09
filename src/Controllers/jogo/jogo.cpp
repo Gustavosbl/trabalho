@@ -1107,7 +1107,6 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
     auto processarJogo = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
         
         while(1) {
-            std::cout << "Personagens: " << personagens.size() << std::endl;
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
         }
     };
