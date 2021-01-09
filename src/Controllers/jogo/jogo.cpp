@@ -3,6 +3,8 @@
 #include <memory>
 #include <cmath>
 
+std::mutex foo, bar;
+
 boost::asio::io_service my_io_service_receive; // Conecta com o SO
 
 udp::endpoint local_endpoint_receive(udp::v4(), 9001); // endpoint: contem
@@ -956,6 +958,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             memset(v, 0, 1000);
             meu_socket_receive.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
+            std::lock (foo, bar);
             json j = json::parse(v);
             
             std::string s1 = j["request"].get<std::string>();
@@ -998,6 +1001,8 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                     meu_socket_receive.send_to(boost::asio::buffer(s), remote_endpoint_receive);
                 }
             }
+            foo.unlock();
+            bar.unlock();
         }
     };
 
