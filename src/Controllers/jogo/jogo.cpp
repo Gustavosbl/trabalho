@@ -759,7 +759,7 @@ void Jogo::conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado>
     meu_socket_send.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                     remote_endpoint_send);
     json j2 = json::parse(v);
-    std::cout << j2 << sd::endl;
+    std::cout << j2 << std::endl;
     std::string s1 = j2["request"];
     std::string s2 = "success";
     std::string s3 = "ip_already_connected";
