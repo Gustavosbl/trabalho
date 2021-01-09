@@ -15,6 +15,7 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
     if (ghost1 == true) life = 0;
     std::shared_ptr<Timer> powerTimer1 (new Timer());
     powerTimer = powerTimer1;
+    free = false;
 
     // int mapa[1][1] = {{6}};
     int **mapa = pac;
@@ -155,4 +156,10 @@ void Personagem::setIp(udp::endpoint remote_endpoint1) {
 }
 udp::endpoint Personagem::getIp() {
     return remote_endpoint;
+}
+void Personagem::setFree(bool free1) {
+    free = free1;
+}
+bool Personagem::getFree() {
+    return free;
 }

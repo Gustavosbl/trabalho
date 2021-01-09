@@ -1,4 +1,4 @@
-#include "../Include/Controllers/jogo/jogo.hpp"
+#include "../Include/Controllers/servidor/servidor.hpp"
 #include <string>
 #include <iostream>
 #include <memory>
@@ -11,9 +11,9 @@ int main() {
 
     std::shared_ptr<View> view (new View(screenWidth, screenHeight));
     std::shared_ptr<Teclado> teclado (new Teclado()); // teclado
-    std::unique_ptr<Jogo> jogo (new Jogo());
+    std::unique_ptr<Servidor> servidor (new Servidor());
  
-    jogo->iniciarServidor(view, teclado);
+    servidor->iniciarServidor(view, teclado);
 
     return 0;
 }
