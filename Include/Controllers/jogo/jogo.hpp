@@ -23,7 +23,6 @@
 #include <sys/time.h>
 #include <math.h>
 #include <thread>
-#include <mutex>
 using nlohmann::json;
 using boost::asio::ip::udp;
 
@@ -53,4 +52,5 @@ class Jogo{
         void conectarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado);
         bool jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado, std::string name);
         void fimDeJogo(std::shared_ptr<View> view, std::shared_ptr<Textura> tela);
+        void iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> teclado);
 };
