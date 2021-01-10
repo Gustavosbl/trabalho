@@ -809,10 +809,12 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
 
     auto render = [this](std::shared_ptr<View> view, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name, std::shared_ptr<bool> rodando) {
         std::shared_ptr<Timer> controlTimer (new Timer());
+        std::shared_ptr<Timer> timeout (new Timer());
         boost::asio::io_service io_service;
 
         udp::endpoint local_endpoint(udp::v4(), 0);
         udp::socket meu_socket(io_service, local_endpoint);
+        meu_socket.non_blocking(true);
 
         // Encontrando IP remoto
         boost::asio::ip::address ip_remoto =
@@ -834,8 +836,15 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
                 meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint1);
 
                 memset(v, 0, 1000000);
-                meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
+                timeout->start();
+                size_t len = 0;
+                bool received = false;
+                while (timeout->elapsedSeconds() < 1) {
+                    len = meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
                                 remote_endpoint1);
+                    if (len > 0) received = true;
+                }
+                if (received == false) continue;
                 json j3 = json::parse(v);
                 if (j3["active"].get<bool>() == false) {
                     (*rodando) = false;
