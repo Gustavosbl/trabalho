@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <cmath>
-
+std::mutex foo;
 boost::asio::io_service my_io_service_receive; // Conecta com o SO
 
 udp::endpoint local_endpoint_receive(udp::v4(), 9001); // endpoint: contem
@@ -389,7 +389,9 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
             memset(v, 0, 1000);
             meu_socket_receive.receive_from(boost::asio::buffer(v, 1000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
+            foo.lock();
             local_remote_endpoint = remote_endpoint_receive;
+
             json j = json::parse(v);
             
             std::string s1 = j["request"].get<std::string>();
@@ -432,6 +434,7 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                 std::cout << s << std::endl;
                 meu_socket_receive.send_to(boost::asio::buffer(s), local_remote_endpoint);
             }
+            foo.unlock();
         }
     };
 
@@ -443,6 +446,7 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
             memset(v, 0, 100000);
             meu_socket_receive.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint_receive);            // Confs. do Cliente
+            foo.lock();
             local_remote_endpoint = remote_endpoint_receive;
             json j = json::parse(v);
             std::string s1 = j["request"].get<std::string>();
@@ -475,12 +479,14 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                     }
                 }
             }
+            foo.unlock();
         }
     };
 
     auto enviarDados = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
         char v[100000];
         while(1) {
+            foo.lock();
             json j2;
             j2["request"] = "render";
 
@@ -525,6 +531,7 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
                 std::string s = j2.dump();
                 meu_socket_receive.send_to(boost::asio::buffer(s), personagens[p]->getIp());
             }
+            foo.unlock();
         }
 
     };
@@ -532,7 +539,9 @@ void Servidor::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Tecla
     auto processarJogo = [this](std::vector<std::shared_ptr<Personagem>> &personagens, std::shared_ptr<View> view, std::vector<std::shared_ptr<Bolinha>> &bolinhas, std::vector<std::shared_ptr<CenarioJogo>> &cenarioJogo, std::shared_ptr<Timer> timer) {
         
         while(1) {
+            foo.lock();
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
+            foo.unlock();
         }
     };
 
