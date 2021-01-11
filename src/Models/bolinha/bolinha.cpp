@@ -6,6 +6,7 @@ Bolinha::Bolinha(int** ball, bool power1, int size1, char const* path)
     size = size1;
     score = 10;
     display = true;
+    oldDisplay = true;
     if (power1 == true) score = 50;
 
 
@@ -84,21 +85,27 @@ std::shared_ptr<Textura> Bolinha::getTextura()
 {
     return textura;
 };
-void Bolinha::setPower()
+void Bolinha::setPower(bool power1)
 {
-    power = !power;
+    power = power1;
 };
 bool Bolinha::getPower()
 {
     return power;
 };
-void Bolinha::setDisplay()
+void Bolinha::setDisplay(bool display1)
 {
-    display = !display;
+    display = display1;
 };
 bool Bolinha::getDisplay()
 {
     return display;
+};
+void Bolinha::setOldDisplay(bool oldDisplay1){
+    oldDisplay = oldDisplay1;
+};
+bool Bolinha::getOldDisplay(){
+    return oldDisplay;
 };
 void Bolinha::setSize(int size1)
 {

@@ -1,6 +1,6 @@
 #include "../../../Include/Models/personagem/personagem.hpp"
 
-Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path)
+Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int height1, char const* path, std::string name1)
 {
     power = power1;
     ghost = ghost1;
@@ -8,7 +8,14 @@ Personagem::Personagem(int** pac, bool power1, bool ghost1, int width1, int heig
     width = width1;
     life = 2;
     score = 0;
+    name = name1;
+    x = 0;
+    y = 0;
+    playing = false;
     if (ghost1 == true) life = 0;
+    std::shared_ptr<Timer> powerTimer1 (new Timer());
+    powerTimer = powerTimer1;
+    free = false;
 
     // int mapa[1][1] = {{6}};
     int **mapa = pac;
@@ -117,3 +124,42 @@ void Personagem::setScore(unsigned long int score1){
 unsigned long int Personagem::getScore(){
     return score;
 };
+void Personagem::setName(std::string name1) {
+    name = name1;
+};
+std::string Personagem::getName() {
+    return name;
+};
+std::shared_ptr<Timer> Personagem::getPowerTimer() {
+    return powerTimer;
+};
+void Personagem::setX(int x1) {
+    x = x1;
+}
+int Personagem::getX() {
+    return x;
+}
+void Personagem::setY(int y1) {
+    y = y1;
+}
+int Personagem::getY() {
+    return y;
+}
+void Personagem::setPlaying(bool playing1) {
+    playing = playing1;
+}
+bool Personagem::getPlaying() {
+    return playing;
+}
+void Personagem::setIp(udp::endpoint remote_endpoint1) {
+    remote_endpoint = remote_endpoint1;
+}
+udp::endpoint Personagem::getIp() {
+    return remote_endpoint;
+}
+void Personagem::setFree(bool free1) {
+    free = free1;
+}
+bool Personagem::getFree() {
+    return free;
+}
