@@ -808,7 +808,6 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
     std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo;
 
     auto render = [this](std::shared_ptr<View> view, std::vector<std::shared_ptr<Personagem>> personagens, std::vector<std::shared_ptr<Bolinha>> bolinhas, std::vector<std::shared_ptr<CenarioJogo>> cenarioJogo, std::shared_ptr<bool> gameover, std::shared_ptr<json> config, std::string name, std::shared_ptr<bool> rodando) {
-        std::shared_ptr<Timer> controlTimer (new Timer());
         std::shared_ptr<Timer> timeout (new Timer());
         boost::asio::io_service io_service;
 
@@ -825,66 +824,67 @@ bool Jogo::jogarMulti(std::shared_ptr<View> view, std::shared_ptr<Teclado> tecla
         char const* bolao = "./assets/bolao.jpg";
 
         char v[1000000];
-        controlTimer->start();
         json j;
         while ((*rodando)) {
-            if (controlTimer->elapsedSeconds() > 0.01) {
+            boost::system::error_code error = boost::asio::error::would_block;
+            j["request"] = "data";
+            j["name"] = name;
+            std::string s2 = j.dump();
+            meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint1);
+            std::cout << "Sending request!!!" << std::endl;
 
-                j["request"] = "data";
-                j["name"] = name;
-                std::string s2 = j.dump();
-                meu_socket.send_to(boost::asio::buffer(s2), remote_endpoint1);
-
+            timeout->start();
+            bool received = false;
+            while (timeout->elapsedSeconds() < 0.1) {
                 memset(v, 0, 1000000);
-                timeout->start();
                 size_t len = 0;
-                bool received = false;
-                while (timeout->elapsedSeconds() < 1) {
-                    len = meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
-                                remote_endpoint1);
-                    if (len > 0) received = true;
-                }
-                if (received == false) continue;
-                json j3 = json::parse(v);
-                if (j3["active"].get<bool>() == false) {
-                    (*rodando) = false;
-                    (*gameover) = j3["dead"].get<bool>();
+                len = meu_socket.receive_from(boost::asio::buffer(v, 1000000), // Local do buffer
+                            remote_endpoint1, 0, error);
+                if (len > 0) {
+                    received = true;
                     break;
                 }
-
-                std::vector<json> ch = j3["characters"].get<std::vector<json>>();
-                while (personagens.size() != ch.size()) {
-                    criarPersonagem(personagens, view, name);
-                }
-                for (int i = 0; i < ch.size(); i++) {
-                    personagens[i]->setLife(ch[i]["life"].get<int>());
-                    personagens[i]->getTextura()->setTarget(ch[i]["x"].get<int>(), ch[i]["y"].get<int>());
-                }
-
-                std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
-                for (int i = 0; i < bolinhas.size(); i++) {
-                    bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
-                    bolinhas[i]->setPower(pt[i]["power"].get<bool>());
-                    bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
-                    if (bolinhas[i]->getPower()) {
-                        std::shared_ptr<Textura> bolaPoder (new Textura(view->getRenderer(), bolao, pt[i]["x"].get<int>(), pt[i]["y"].get<int>()));
-                        bolinhas[i]->setTextura(bolaPoder);
-                    }
-                    else bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
-                }
-
-                view->renderClear();
-                view->renderBackground(cenarioJogo[0]->getTextura());
-                for (int i = 0; i < bolinhas.size(); i++) {
-                    if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
-                }
-                for (int i = 0; i < personagens.size(); i++) {
-                    if (personagens[i]->getLife() >= 0) view->renderCharacter(personagens[i]->getTextura());
-                }
-                view->renderPresent();
-                controlTimer->stop();
-                controlTimer->start();
             }
+            timeout->stop();
+            if (received == false) continue;
+            json j3 = json::parse(v);
+            std::cout << j3 << std::endl;
+            if (j3["active"].get<bool>() == false) {
+                (*rodando) = false;
+                (*gameover) = j3["dead"].get<bool>();
+                break;
+            }
+
+            std::vector<json> ch = j3["characters"].get<std::vector<json>>();
+            while (personagens.size() != ch.size()) {
+                criarPersonagem(personagens, view, name);
+            }
+            for (int i = 0; i < ch.size(); i++) {
+                personagens[i]->setLife(ch[i]["life"].get<int>());
+                personagens[i]->getTextura()->setTarget(ch[i]["x"].get<int>(), ch[i]["y"].get<int>());
+            }
+
+            std::vector<json> pt = j3["bolinhas"].get<std::vector<json>>();
+            for (int i = 0; i < bolinhas.size(); i++) {
+                bolinhas[i]->setDisplay(pt[i]["display"].get<bool>());
+                bolinhas[i]->setPower(pt[i]["power"].get<bool>());
+                bolinhas[i]->setScore(pt[i]["score"].get<unsigned long int>());
+                if (bolinhas[i]->getPower()) {
+                    std::shared_ptr<Textura> bolaPoder (new Textura(view->getRenderer(), bolao, pt[i]["x"].get<int>(), pt[i]["y"].get<int>()));
+                    bolinhas[i]->setTextura(bolaPoder);
+                }
+                else bolinhas[i]->getTextura()->setTarget(pt[i]["x"].get<int>(), pt[i]["y"].get<int>());
+            }
+
+            view->renderClear();
+            view->renderBackground(cenarioJogo[0]->getTextura());
+            for (int i = 0; i < bolinhas.size(); i++) {
+                if (bolinhas[i]->getDisplay() == true) view->renderCharacter(bolinhas[i]->getTextura());
+            }
+            for (int i = 0; i < personagens.size(); i++) {
+                if (personagens[i]->getLife() >= 0) view->renderCharacter(personagens[i]->getTextura());
+            }
+            view->renderPresent();
         }
 
     };
@@ -1108,6 +1108,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
             memset(v, 0, 100000);
             meu_socket.receive_from(boost::asio::buffer(v, 100000), // Local do buffer
                             remote_endpoint);            // Confs. do Cliente
+            std::cout << "Received request from " << remote_endpoint << std::endl;
             json j = json::parse(v);
 
             std::string name = j["name"].get<std::string>();
@@ -1129,6 +1130,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 js["dead"] = dead;
                 std::string s = js.dump();
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                std::cout << "Sending request to remove Character of " << remote_endpoint << std::endl;
                 continue;
             }
 
@@ -1167,6 +1169,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
                 j2["dead"] = false;
                 std::string s = j2.dump();
                 meu_socket.send_to(boost::asio::buffer(s), remote_endpoint);
+                std::cout << "Sending data to render " << remote_endpoint << std::endl;
             }
         }
 
@@ -1185,7 +1188,7 @@ void Jogo::iniciarServidor(std::shared_ptr<View> view, std::shared_ptr<Teclado> 
 
 
         while(1) {
-            std::cout << "personagens: " << personagens.size() << std::endl;
+            // std::cout << "personagens: " << personagens.size() << std::endl;
             allCharactersControl(personagens, bolinhas, cenarioJogo[0], timer);
         }
     };
