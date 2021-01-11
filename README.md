@@ -5,9 +5,11 @@ install freeImage
   $ sudo apt-get install libfreeimage3 libfreeimage-dev
   
 install boost
+
   $ sudo apt-get install libboost-all-dev
   
 install SDL
+
   $ sudo apt install libsdl2-dev libsdl2-image-dev 
   
  
