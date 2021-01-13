@@ -14,5 +14,15 @@ install SDL
   
  
 Instruções para o Makefile:
+
  make clean - remover arquivos .zip e executáveis
+ 
  make all - compilar o servidor e cliente
+ 
+Instruções para o jogo:
+
+ enter - novo jogo
+ 
+ espaço - carregar jogo
+ 
+ tab - multiplayer (colocar o IP no arquivo config.txt)
